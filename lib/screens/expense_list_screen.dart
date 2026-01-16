@@ -13,6 +13,11 @@ class ExpenseListScreen extends StatefulWidget {
 }
 
 class _ExpenseListScreenState extends State<ExpenseListScreen> {
+  // --- UI State: Temporary memory for "ticked" items ---
+  // This is NOT saved to Hive, so it resets when you leave the screen
+  // or when the app rebuilds for a new fortnight.
+  final Set<String> _tickedIds = {};
+
   @override
   Widget build(BuildContext context) {
     final expenses = StorageService.getExpenses();
@@ -33,7 +38,18 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         expenses.fold(0.0, (sum, e) => sum + e.fortnightCost);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Expenses')),
+      appBar: AppBar(
+        title: const Text('Expenses'),
+        actions: [
+          // Manual clear button if you want to reset during the same session
+          if (_tickedIds.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () => setState(() => _tickedIds.clear()),
+              tooltip: 'Clear Ticks',
+            ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addExpense(context),
         child: const Icon(Icons.add),
@@ -55,32 +71,54 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
 
           // Individual expense items
           ...expenses.map(
-            (expense) => Card(
-              child: ListTile(
-                title: Text(expense.name),
-                subtitle: Text(
-                  '${expense.category} • '
-                  '\$${expense.amount.toStringAsFixed(2)} / ${expense.frequency.label} '
-                  '• Fortnight: \$${expense.fortnightCost.toStringAsFixed(2)}',
-                ),
-                onTap: () => _editExpense(context, expense),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () async {
-                    await StorageService.deleteExpense(expense.id);
-                    setState(() {});
+            (expense) {
+              final bool isTicked = _tickedIds.contains(expense.id);
+
+              return Card(
+                // HIGHLIGHT: Background turns light purple when ticked
+                color: isTicked ? Colors.deepPurple.withOpacity(0.15) : null,
+                elevation: isTicked ? 0 : 1, 
+                child: ListTile(
+                  onTap: () {
+                    // Toggles the "ticked" highlight locally
+                    setState(() {
+                      if (isTicked) {
+                        _tickedIds.remove(expense.id);
+                      } else {
+                        _tickedIds.add(expense.id);
+                      }
+                    });
                   },
+                  onLongPress: () => _editExpense(context, expense),
+                  title: Text(
+                    expense.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    '${expense.category} • '
+                    '\$${expense.amount.toStringAsFixed(2)} / ${expense.frequency.label} '
+                    '• Fortnight: \$${expense.fortnightCost.toStringAsFixed(2)}',
+                  ),
+                  trailing: isTicked
+                      ? const Icon(Icons.check_circle, color: Colors.green, size: 28)
+                      : IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () async {
+                            await StorageService.deleteExpense(expense.id);
+                            setState(() {});
+                          },
+                        ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
 
           const SizedBox(height: 12),
 
           // Total
           ListTile(
-            title:
-                const Text('Total', style: TextStyle(fontWeight: FontWeight.bold)),
+            title: const Text('Total',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             trailing:
                 Text('\$${totalFortnight.toStringAsFixed(2)} / fortnight'),
           ),
