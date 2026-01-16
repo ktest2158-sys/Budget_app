@@ -13,11 +13,6 @@ class ExpenseListScreen extends StatefulWidget {
 }
 
 class _ExpenseListScreenState extends State<ExpenseListScreen> {
-  // --- UI State: Temporary memory for "ticked" items ---
-  // This is NOT saved to Hive, so it resets when you leave the screen
-  // or when the app rebuilds for a new fortnight.
-  final Set<String> _tickedIds = {};
-
   @override
   Widget build(BuildContext context) {
     final expenses = StorageService.getExpenses();
@@ -41,13 +36,20 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       appBar: AppBar(
         title: const Text('Expenses'),
         actions: [
-          // Manual clear button if you want to reset during the same session
-          if (_tickedIds.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () => setState(() => _tickedIds.clear()),
-              tooltip: 'Clear Ticks',
-            ),
+          // Reset button to clear all ticks permanently for the current session
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () async {
+              for (var e in expenses) {
+                if (e.isChecked) {
+                  e.isChecked = false;
+                  await StorageService.saveExpense(e);
+                }
+              }
+              setState(() {});
+            },
+            tooltip: 'Reset Ticks',
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -72,22 +74,18 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
           // Individual expense items
           ...expenses.map(
             (expense) {
-              final bool isTicked = _tickedIds.contains(expense.id);
-
               return Card(
-                // HIGHLIGHT: Background turns light purple when ticked
-                color: isTicked ? Colors.deepPurple.withOpacity(0.15) : null,
-                elevation: isTicked ? 0 : 1, 
+                // Use the saved isChecked status from the database
+                color: expense.isChecked ? Colors.deepPurple.withOpacity(0.15) : null,
+                elevation: expense.isChecked ? 0 : 1,
                 child: ListTile(
-                  onTap: () {
-                    // Toggles the "ticked" highlight locally
+                  onTap: () async {
+                    // Toggle the value in the model
                     setState(() {
-                      if (isTicked) {
-                        _tickedIds.remove(expense.id);
-                      } else {
-                        _tickedIds.add(expense.id);
-                      }
+                      expense.isChecked = !expense.isChecked;
                     });
+                    // Save the change to Hive so it persists until you reset it
+                    await StorageService.saveExpense(expense);
                   },
                   onLongPress: () => _editExpense(context, expense),
                   title: Text(
@@ -99,7 +97,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                     '\$${expense.amount.toStringAsFixed(2)} / ${expense.frequency.label} '
                     '• Fortnight: \$${expense.fortnightCost.toStringAsFixed(2)}',
                   ),
-                  trailing: isTicked
+                  trailing: expense.isChecked
                       ? const Icon(Icons.check_circle, color: Colors.green, size: 28)
                       : IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
@@ -140,6 +138,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
               category: category,
               amount: amount,
               frequency: freq,
+              // New items start unchecked by default
             ),
           );
           setState(() {});
@@ -159,15 +158,13 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         frequency: expense.frequency,
         isExpense: true,
         onSave: (name, category, amount, freq) async {
-          await StorageService.saveExpense(
-            Expense(
-              id: expense.id,
-              name: name,
-              category: category,
-              amount: amount,
-              frequency: freq,
-            ),
-          );
+          // Update existing object properties
+          expense.name = name;
+          expense.category = category;
+          expense.amount = amount;
+          expense.frequency = freq;
+          
+          await StorageService.saveExpense(expense);
           setState(() {});
         },
       ),
