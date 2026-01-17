@@ -18,6 +18,9 @@ enum Frequency {
 
   @HiveField(4)
   annual,
+
+  @HiveField(5)
+  oneOff, // ✅ Added one-off frequency
 }
 
 /// Extension methods for Frequency
@@ -34,6 +37,9 @@ extension FrequencyExtension on Frequency {
         return amount / (4.345 * 3);
       case Frequency.annual:
         return amount / 52.1429;
+      case Frequency.oneOff:
+        // For a one-off, we treat the amount as the total for that period
+        return amount; 
     }
   }
 
@@ -49,6 +55,8 @@ extension FrequencyExtension on Frequency {
         return amount * (14 / 90);
       case Frequency.annual:
         return amount * (14 / 365);
+      case Frequency.oneOff:
+        return amount;
     }
   }
 

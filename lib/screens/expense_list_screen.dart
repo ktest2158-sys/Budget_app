@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
 import '../models/expense.dart';
-import '../widgets/add_item_dialog.dart';
-import '../widgets/edit_item_dialog.dart';
 import '../models/frequency.dart';
+import 'add_item_screen.dart';
+import 'edit_item_screen.dart';
 
 class ExpenseListScreen extends StatefulWidget {
-  const ExpenseListScreen({super.key});
+  final int fortnightOffset;
+  const ExpenseListScreen({super.key, required this.fortnightOffset});
 
   @override
   State<ExpenseListScreen> createState() => _ExpenseListScreenState();
@@ -15,159 +16,120 @@ class ExpenseListScreen extends StatefulWidget {
 class _ExpenseListScreenState extends State<ExpenseListScreen> {
   @override
   Widget build(BuildContext context) {
-    final expenses = StorageService.getExpenses();
+    final range = StorageService.getFortnightRange(widget.fortnightOffset);
+    
+    // 1. Get ONLY actual expenses for this fortnight
+    final allExpenses = StorageService.getExpenses();
+    final paidInFortnight = allExpenses.where((exp) => 
+      !exp.isTemplate && 
+      exp.date != null && 
+      exp.date!.isAfter(range['start']!.subtract(const Duration(seconds: 1))) && 
+      exp.date!.isBefore(range['end']!.add(const Duration(seconds: 1)))
+    ).toList();
 
-    // -----------------------------
-    // Totals per category (fortnight)
-    // -----------------------------
-    final categoryTotals = <String, double>{};
-    for (var e in expenses) {
-      categoryTotals[e.category] =
-          (categoryTotals[e.category] ?? 0) + e.fortnightCost;
-    }
-
-    // -----------------------------
-    // Total expenses (fortnight)
-    // -----------------------------
-    final totalFortnight =
-        expenses.fold(0.0, (sum, e) => sum + e.fortnightCost);
+    // 2. ✅ THE FIX: Get Master Templates but HIDE them if they are already in the 'paid' list
+    final templates = StorageService.getTemplates().where((template) {
+      // If any 'paid' expense has the same name as this template, hide the template
+      bool alreadyPaid = paidInFortnight.any((paid) => paid.name == template.name);
+      return !alreadyPaid;
+    }).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Expenses'),
-        actions: [
-          // Reset button to clear all ticks permanently for the current session
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () async {
-              for (var e in expenses) {
-                if (e.isChecked) {
-                  e.isChecked = false;
-                  await StorageService.saveExpense(e);
-                }
-              }
-              setState(() {});
-            },
-            tooltip: 'Reset Ticks',
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Manage Expenses')),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _addExpense(context),
+        onPressed: () => _navigateToAddExpense(context, range),
         child: const Icon(Icons.add),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(12),
         children: [
-          // Category totals
-          ...categoryTotals.entries.map(
-            (e) => ListTile(
-              title: Text(
-                e.key,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              trailing: Text('\$${e.value.toStringAsFixed(2)} / fortnight'),
+          // --- SECTION: REMAINING TO PAY ---
+          if (templates.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
+              child: Text("REMAINING BILLS", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 12)),
             ),
-          ),
-          const Divider(),
+            ...templates.map((template) => Card(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: ListTile(
+                leading: const Icon(Icons.radio_button_unchecked, color: Colors.blue),
+                title: Text(template.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+                subtitle: Text("\$${template.amount.toStringAsFixed(2)}"),
+                onTap: () async {
+                  // ✅ When tapped, it creates a 'Paid' version and disappears from here
+                  await StorageService.checkOffExpense(template, widget.fortnightOffset);
+                  setState(() {}); 
+                },
+              ),
+            )),
+          ],
 
-          // Individual expense items
-          ...expenses.map(
-            (expense) {
-              return Card(
-                // Use the saved isChecked status from the database
-                color: expense.isChecked ? Colors.deepPurple.withOpacity(0.15) : null,
-                elevation: expense.isChecked ? 0 : 1,
-                child: ListTile(
-                  onTap: () async {
-                    // Toggle the value in the model
-                    setState(() {
-                      expense.isChecked = !expense.isChecked;
-                    });
-                    // Save the change to Hive so it persists until you reset it
-                    await StorageService.saveExpense(expense);
-                  },
-                  onLongPress: () => _editExpense(context, expense),
-                  title: Text(
-                    expense.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    '${expense.category} • '
-                    '\$${expense.amount.toStringAsFixed(2)} / ${expense.frequency.label} '
-                    '• Fortnight: \$${expense.fortnightCost.toStringAsFixed(2)}',
-                  ),
-                  trailing: expense.isChecked
-                      ? const Icon(Icons.check_circle, color: Colors.green, size: 28)
-                      : IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () async {
-                            await StorageService.deleteExpense(expense.id);
-                            setState(() {});
-                          },
-                        ),
-                ),
-              );
-            },
-          ),
+          const Divider(height: 40, thickness: 1, indent: 20, endIndent: 20),
 
-          const SizedBox(height: 12),
-
-          // Total
-          ListTile(
-            title: const Text('Total',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            trailing:
-                Text('\$${totalFortnight.toStringAsFixed(2)} / fortnight'),
+          // --- SECTION: COMPLETED ---
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text("PAID & COMPLETED", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 12)),
           ),
+          if (paidInFortnight.isEmpty)
+            const Center(child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Text("No bills paid yet for this period.", style: TextStyle(color: Colors.grey)),
+            )),
+          ...paidInFortnight.map((expense) => ListTile(
+            leading: const Icon(Icons.check_circle, color: Colors.green),
+            title: Text(expense.name, style: const TextStyle(color: Colors.grey)),
+            subtitle: Text("\$${expense.amount.toStringAsFixed(2)}"),
+            trailing: IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              onPressed: () async {
+                await StorageService.deleteExpense(expense.id);
+                setState(() {}); // Deleting a paid item makes it reappear in 'Remaining'
+              },
+            ),
+            onTap: () => _navigateToEdit(context, expense),
+          )),
+          const SizedBox(height: 80),
         ],
       ),
     );
   }
 
-  void _addExpense(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AddItemDialog(
+  // --- HELPERS (Keep your Add/Edit working) ---
+
+  void _navigateToAddExpense(BuildContext context, Map<String, DateTime> range) {
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => AddItemScreen(
         title: 'Add Expense',
-        isExpense: true,
         onSave: (name, category, amount, freq) async {
-          await StorageService.saveExpense(
-            Expense(
-              name: name,
-              category: category,
-              amount: amount,
-              frequency: freq,
-              // New items start unchecked by default
-            ),
-          );
+          bool isOneOff = (freq == Frequency.oneOff);
+          await StorageService.saveExpense(Expense(
+            name: name, category: category, amount: amount,
+            frequency: freq, isTemplate: !isOneOff, 
+            date: isOneOff ? range['start'] : null, 
+          ));
           setState(() {});
         },
       ),
-    );
+    ));
   }
 
-  void _editExpense(BuildContext context, Expense expense) {
-    showDialog(
-      context: context,
-      builder: (_) => EditItemDialog(
-        title: 'Edit Expense',
+  void _navigateToEdit(BuildContext context, Expense expense) {
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => EditItemScreen(
+        title: "Edit Paid Expense",
         name: expense.name,
         category: expense.category,
         amount: expense.amount,
         frequency: expense.frequency,
-        isExpense: true,
-        onSave: (name, category, amount, freq) async {
-          // Update existing object properties
-          expense.name = name;
-          expense.category = category;
-          expense.amount = amount;
-          expense.frequency = freq;
-          
-          await StorageService.saveExpense(expense);
+        onSave: (name, cat, amt, freq) async {
+          final updated = Expense(
+            id: expense.id, name: name, category: cat,
+            amount: amt, frequency: freq, isTemplate: false, date: expense.date,
+          );
+          await StorageService.saveExpense(updated);
           setState(() {});
         },
       ),
-    );
+    ));
   }
 }

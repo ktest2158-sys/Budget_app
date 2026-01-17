@@ -2,7 +2,7 @@ import 'package:hive/hive.dart';
 import 'frequency.dart';
 import 'package:uuid/uuid.dart';
 
-part 'expense.g.dart'; // Required for generated adapter
+part 'expense.g.dart';
 
 @HiveType(typeId: 1)
 class Expense extends HiveObject {
@@ -21,9 +21,16 @@ class Expense extends HiveObject {
   @HiveField(4)
   Frequency frequency;
 
-  // ✅ New field added safely at index 5
   @HiveField(5)
   bool isChecked;
+
+  // ✅ Used to filter which fortnight this payment belongs to
+  @HiveField(6)
+  DateTime? date;
+
+  // ✅ Used to identify items in your "Master List"
+  @HiveField(7)
+  bool isTemplate;
 
   Expense({
     String? id,
@@ -31,32 +38,24 @@ class Expense extends HiveObject {
     required this.category,
     required this.amount,
     required this.frequency,
-    this.isChecked = false, // ✅ Default value prevents data loss on old records
+    this.isChecked = false,
+    this.date,
+    this.isTemplate = false,
   }) : id = id ?? const Uuid().v4();
 
-  /// Weekly amount
+  // Helper to create a "Real" expense payment record from a master template
+  Expense createInstance(DateTime instanceDate) {
+    return Expense(
+      name: name,
+      category: category,
+      amount: amount,
+      frequency: frequency,
+      isChecked: true, // It is checked because we are creating it by checking it off
+      date: instanceDate,
+      isTemplate: false, // This is a real record, not a template
+    );
+  }
+
   double get weeklyCost => frequency.toWeekly(amount);
-
-  /// Fortnight amount
   double get fortnightCost => frequency.toFortnight(amount);
-
-  /// Convert to map
-  Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'category': category,
-        'amount': amount,
-        'frequency': frequency.index,
-        'isChecked': isChecked,
-      };
-
-  /// Create Expense from map
-  factory Expense.fromMap(Map<String, dynamic> map) => Expense(
-        id: map['id'] ?? '',
-        name: map['name'] ?? '',
-        category: map['category'] ?? 'Miscellaneous',
-        amount: map['amount']?.toDouble() ?? 0.0,
-        frequency: Frequency.values[map['frequency'] ?? 0],
-        isChecked: map['isChecked'] ?? false,
-      );
 }

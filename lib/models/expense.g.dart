@@ -23,13 +23,15 @@ class ExpenseAdapter extends TypeAdapter<Expense> {
       amount: fields[3] as double,
       frequency: fields[4] as Frequency,
       isChecked: fields[5] as bool,
+      date: fields[6] as DateTime?,
+      isTemplate: fields[7] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, Expense obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -41,7 +43,11 @@ class ExpenseAdapter extends TypeAdapter<Expense> {
       ..writeByte(4)
       ..write(obj.frequency)
       ..writeByte(5)
-      ..write(obj.isChecked);
+      ..write(obj.isChecked)
+      ..writeByte(6)
+      ..write(obj.date)
+      ..writeByte(7)
+      ..write(obj.isTemplate);
   }
 
   @override

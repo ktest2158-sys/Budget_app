@@ -6,7 +6,8 @@ import 'add_item_screen.dart';
 import 'edit_item_screen.dart';
 
 class IncomeListScreen extends StatefulWidget {
-  const IncomeListScreen({super.key});
+  final int fortnightOffset;
+  const IncomeListScreen({super.key, required this.fortnightOffset});
 
   @override
   State<IncomeListScreen> createState() => _IncomeListScreenState();
@@ -15,106 +16,119 @@ class IncomeListScreen extends StatefulWidget {
 class _IncomeListScreenState extends State<IncomeListScreen> {
   @override
   Widget build(BuildContext context) {
-    final incomes = StorageService.getIncomes();
+    final range = StorageService.getFortnightRange(widget.fortnightOffset);
+    
+    // 1. Get ONLY income records for this specific fortnight
+    final allIncomes = StorageService.getIncomes();
+    final receivedThisFortnight = allIncomes.where((inc) => 
+      inc.date.isAfter(range['start']!.subtract(const Duration(seconds: 1))) && 
+      inc.date.isBefore(range['end']!.add(const Duration(seconds: 1)))
+    ).toList();
 
-    // Total per category (fortnight)
-    final categoryTotals = <String, double>{};
-    for (var i in incomes) {
-      categoryTotals[i.category] =
-          (categoryTotals[i.category] ?? 0) + i.fortnightAmount;
-    }
-
-    // Total income (fortnight)
-    final totalFortnightIncome =
-        incomes.fold(0.0, (sum, i) => sum + i.fortnightAmount);
+    // 2. Get the Master Checklist (Items with the appStartDate)
+    // Filter out items that have already been "received" this fortnight
+    final expectedChecklist = allIncomes.where((inc) => 
+      inc.date == StorageService.appStartDate
+    ).where((master) {
+      bool alreadyReceived = receivedThisFortnight.any((received) => received.name == master.name);
+      return !alreadyReceived;
+    }).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Income')),
+      appBar: AppBar(title: const Text('Manage Income')),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addIncome(context),
         child: const Icon(Icons.add),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(12),
         children: [
-          // Show totals per category
-          ...categoryTotals.entries.map(
-            (e) => ListTile(
-              title:
-                  Text(e.key, style: const TextStyle(fontWeight: FontWeight.bold)),
-              trailing: Text('\$${e.value.toStringAsFixed(2)} / fortnight'),
+          // --- MASTER CHECKLIST ---
+          if (expectedChecklist.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
+              child: Text("EXPECTED THIS FORTNIGHT", 
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 12)),
             ),
-          ),
-          const Divider(),
-          // Show individual items
-          ...incomes.map(
-            (income) => Card(
+            ...expectedChecklist.map((master) => Card(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               child: ListTile(
-                title: Text(income.name),
-                subtitle: Text(
-                    '${income.category} • \$${income.amount.toStringAsFixed(2)} / ${income.frequency == Frequency.weekly ? 'wk' : income.frequency == Frequency.fortnightly ? 'fortnight' : income.frequency.label} • Fortnight: \$${income.fortnightAmount.toStringAsFixed(2)}'),
-                onTap: () => _editIncome(context, income),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () async {
-                    await StorageService.deleteIncome(income.id);
-                    setState(() {});
-                  },
-                ),
+                leading: const Icon(Icons.radio_button_unchecked, color: Colors.blue),
+                title: Text(master.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+                subtitle: Text("\$${master.amount.toStringAsFixed(2)}"),
+                onTap: () async {
+                  // ✅ Tapping marks it as received and hides it from this list
+                  await StorageService.checkOffIncome(master, widget.fortnightOffset);
+                  setState(() {}); 
+                },
               ),
+            )),
+          ],
+
+          const Divider(height: 40, thickness: 1, indent: 20, endIndent: 20),
+
+          // --- RECEIVED LIST ---
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text("RECEIVED", 
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 12)),
+          ),
+          if (receivedThisFortnight.isEmpty)
+            const Center(child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Text("Waiting for income...", style: TextStyle(color: Colors.grey)),
+            )),
+          ...receivedThisFortnight.map((income) => ListTile(
+            leading: const Icon(Icons.check_circle, color: Colors.green),
+            title: Text(income.name, style: const TextStyle(color: Colors.grey)),
+            subtitle: Text("\$${income.amount.toStringAsFixed(2)}"),
+            trailing: IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              onPressed: () async {
+                await StorageService.deleteIncome(income.id);
+                setState(() {}); // Deleting here makes it pop back into the "Expected" list
+              },
             ),
-          ),
-          const Divider(),
-          ListTile(
-            title: const Text('Total', style: TextStyle(fontWeight: FontWeight.bold)),
-            trailing: Text('\$${totalFortnightIncome.toStringAsFixed(2)} / fortnight'),
-          ),
+            onTap: () => _editIncome(context, income),
+          )),
+          const SizedBox(height: 80),
         ],
       ),
     );
   }
 
   void _addIncome(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AddItemScreen(
-          title: 'Add Income',
-          onSave: (name, category, amount, freq) async {
-            await StorageService.saveIncome(
-              Income(name: name, category: category, amount: amount, frequency: freq),
-            );
-            setState(() {});
-          },
-        ),
+    final range = StorageService.getFortnightRange(widget.fortnightOffset);
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => AddItemScreen(
+        title: 'Add Income',
+        onSave: (name, category, amount, freq) async {
+          await StorageService.saveIncome(Income(
+            name: name, category: category, amount: amount, 
+            frequency: freq, date: range['start']!,
+          ));
+          setState(() {});
+        },
       ),
-    );
+    ));
   }
 
   void _editIncome(BuildContext context, Income income) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => EditItemScreen(
-          title: 'Edit Income',
-          name: income.name,
-          category: income.category,
-          amount: income.amount,
-          frequency: income.frequency,
-          onSave: (name, category, amount, freq) async {
-            await StorageService.saveIncome(
-              Income(
-                id: income.id,
-                name: name,
-                category: category,
-                amount: amount,
-                frequency: freq,
-              ),
-            );
-            setState(() {});
-          },
-        ),
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => EditItemScreen(
+        title: 'Edit Income',
+        name: income.name,
+        category: income.category,
+        amount: income.amount,
+        frequency: income.frequency,
+        onSave: (name, category, amount, freq) async {
+          final updated = Income(
+            id: income.id, name: name, category: category, 
+            amount: amount, frequency: freq, date: income.date,
+          );
+          await StorageService.saveIncome(updated);
+          setState(() {});
+        },
       ),
-    );
+    ));
   }
 }
