@@ -163,4 +163,38 @@ class StorageService {
   }
 
   static List<String> getExpenseCategories() => Hive.box<String>(expenseCategoryBox).values.toList();
+
+}
+// TEMPORARY: Paste at the end of StorageService.init()
+final expenseBoxInstance = Hive.box<Expense>(expenseBox);
+final templates = expenseBoxInstance.values.where((e) => e.isTemplate).toList();
+
+for (var template in templates) {
+  switch (template.name) {
+    case 'RAC Car Insurance':
+      template.amount = 88.0; // Put your REAL monthly total here
+      template.frequency = Frequency.monthly;
+      template.save();
+      break;
+    case 'RAC Home Insurance':
+      template.amount = 99.0; // Put your REAL monthly total here
+      template.frequency = Frequency.monthly;
+      template.save();
+      break;
+    case 'NBN':
+      template.amount = 65.0; // Put your REAL monthly total here
+      template.frequency = Frequency.monthly;
+      template.save();
+      break;
+    case 'Netflix':
+      template.amount = 22.99; // Put your REAL monthly total here
+      template.frequency = Frequency.monthly;
+      template.save();
+      break;
+    case 'Mobile':
+      template.amount = 45.0; // Put your REAL monthly total here
+      template.frequency = Frequency.monthly;
+      template.save();
+      break;
+  }
 }
