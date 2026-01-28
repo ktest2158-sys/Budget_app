@@ -11,40 +11,68 @@ class StorageService {
   static const settingsBox = 'settings';
   static const fortnightStartKey = 'fortnight_start';
 
-  // ✅ The Fixed Anchor Date
   static final DateTime appStartDate = DateTime(2025, 12, 31);
 
+  // --- INIT ---
   static Future<void> init() async {
+    // --- Register adapters
     if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(IncomeAdapter());
     if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(ExpenseAdapter());
     if (!Hive.isAdapterRegistered(2)) Hive.registerAdapter(FrequencyAdapter());
 
+    // --- Open boxes
     await Hive.openBox<Income>(incomeBox);
     await Hive.openBox<Expense>(expenseBox);
     await Hive.openBox<String>(expenseCategoryBox);
     await Hive.openBox<String>(settingsBox);
 
+    // --- Populate categories if empty
     final catBox = Hive.box<String>(expenseCategoryBox);
     if (catBox.isEmpty) {
       await catBox.addAll([
-        'Salary', 'Rental', 'Government', 'Debt', 'Family', 'Kids', 
-        'Housing', 'Transport', 'Utilities', 'Health', 'Digital', 
+        'Salary', 'Rental', 'Government', 'Debt', 'Family', 'Kids',
+        'Housing', 'Transport', 'Utilities', 'Health', 'Digital',
         'Grocery', 'Savings', 'Miscellaneous',
       ]);
     }
 
+    // --- Populate incomes if empty ---
     final incomeBoxInstance = Hive.box<Income>(incomeBox);
-    final expenseBoxInstance = Hive.box<Expense>(expenseBox);
-
     if (incomeBoxInstance.isEmpty) {
       await incomeBoxInstance.addAll([
-        Income(name: 'Perseus Salary', amount: 2300.0, category: 'Salary', frequency: Frequency.fortnightly, date: appStartDate),
-        Income(name: 'AusPost Salary', amount: 850.0, category: 'Salary', frequency: Frequency.fortnightly, date: appStartDate),
-        Income(name: 'Kara House', amount: 300.0, category: 'Home', frequency: Frequency.fortnightly, date: appStartDate),
-        Income(name: 'Clink FTB', amount: 280.0, category: 'Government', frequency: Frequency.fortnightly, date: appStartDate),
+        Income(
+          name: 'Perseus Salary',
+          amount: 2300.0,
+          category: 'Salary',
+          frequency: Frequency.fortnightly,
+          date: appStartDate,
+        ),
+        Income(
+          name: 'AusPost Salary',
+          amount: 850.0,
+          category: 'Salary',
+          frequency: Frequency.fortnightly,
+          date: appStartDate,
+        ),
+        Income(
+          name: 'Kara House',
+          amount: 300.0,
+          category: 'Home',
+          frequency: Frequency.fortnightly,
+          date: appStartDate,
+        ),
+        Income(
+          name: 'Clink FTB',
+          amount: 280.0,
+          category: 'Government',
+          frequency: Frequency.fortnightly,
+          date: appStartDate,
+        ),
       ]);
     }
 
+    // --- Populate expense templates if empty ---
+    final expenseBoxInstance = Hive.box<Expense>(expenseBox);
     if (expenseBoxInstance.isEmpty) {
       await expenseBoxInstance.addAll([
         Expense(name: 'Loan Repayment 1', amount: 800.0, category: 'Home', frequency: Frequency.fortnightly, isTemplate: true),
@@ -53,18 +81,17 @@ class StorageService {
         Expense(name: 'OSHC', amount: 150.0, category: 'Kids', frequency: Frequency.fortnightly, isTemplate: true),
         Expense(name: 'Spriggy', amount: 20.0, category: 'Kids', frequency: Frequency.fortnightly, isTemplate: true),
         Expense(name: 'City of Swan', amount: 90.0, category: 'Home', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'RAC Car Insurance', amount: 44.0, category: 'Transport', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'RAC Home Insurance', amount: 49.50, category: 'Home', frequency: Frequency.fortnightly, isTemplate: true),
+        Expense(name: 'RAC Car Insurance', amount: 88.0, category: 'Transport', frequency: Frequency.monthly, isTemplate: true),
+        Expense(name: 'RAC Home Insurance', amount: 100.0, category: 'Home', frequency: Frequency.monthly, isTemplate: true),
         Expense(name: 'Water Corp', amount: 75.0, category: 'Utilities', frequency: Frequency.fortnightly, isTemplate: true),
         Expense(name: 'Synergy (Elec)', amount: 30.0, category: 'Utilities', frequency: Frequency.fortnightly, isTemplate: true),
         Expense(name: 'AGL (Gas)', amount: 22.0, category: 'Utilities', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'NBN', amount: 30.0, category: 'Utilities', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'Mobile', amount: 20.0, category: 'Utilities', frequency: Frequency.fortnightly, isTemplate: true),
+        Expense(name: 'NBN', amount: 60.0, category: 'Utilities', frequency: Frequency.monthly, isTemplate: true),
+        Expense(name: 'Mobile', amount: 40.0, category: 'Utilities', frequency: Frequency.monthly, isTemplate: true),
         Expense(name: 'Gym (Chasing Better)', amount: 24.34, category: 'Health', frequency: Frequency.fortnightly, isTemplate: true),
         Expense(name: 'YouTube', amount: 10.0, category: 'Digital', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'Netflix', amount: 5.0, category: 'Digital', frequency: Frequency.fortnightly, isTemplate: true),
+        Expense(name: 'Netflix', amount: 10.0, category: 'Digital', frequency: Frequency.monthly, isTemplate: true),
         Expense(name: 'Food', amount: 600.0, category: 'Grocery', frequency: Frequency.fortnightly, isTemplate: true),
-        // Change 'Savings' to 'Entertainment'
         Expense(name: 'Holiday Savings', amount: 300.0, category: 'Entertainment', frequency: Frequency.fortnightly, isTemplate: true),
         Expense(name: 'Birthday Savings', amount: 70.0, category: 'Entertainment', frequency: Frequency.fortnightly, isTemplate: true),
       ]);
@@ -78,49 +105,42 @@ class StorageService {
   }
 
   static Map<String, DateTime> getFortnightRange(int userOffset) {
-    int totalOffset = getCurrentFortnightOffset() + userOffset;
+    final totalOffset = getCurrentFortnightOffset() + userOffset;
     final start = appStartDate.add(Duration(days: totalOffset * 14));
     final end = start.add(const Duration(days: 13, hours: 23, minutes: 59, seconds: 59));
     return {'start': start, 'end': end};
   }
 
-  // ✅ THE RESTORED METHOD: Fixes the 'Member not found' error
   static Map<String, double> getDashboardSummary(int offset) {
     final range = getFortnightRange(offset);
-    
-    final incomes = getIncomes().where((inc) => 
-      inc.date.isAfter(range['start']!.subtract(const Duration(seconds: 1))) && 
-      inc.date.isBefore(range['end']!.add(const Duration(seconds: 1)))
-    ).toList();
+    final incomes = getIncomes().where((inc) =>
+        inc.date.isAfter(range['start']!.subtract(const Duration(seconds: 1))) &&
+        inc.date.isBefore(range['end']!.add(const Duration(seconds: 1)))).toList();
 
-    final expenses = getExpenses().where((exp) => 
-      !exp.isTemplate && exp.date != null &&
-      exp.date!.isAfter(range['start']!.subtract(const Duration(seconds: 1))) && 
-      exp.date!.isBefore(range['end']!.add(const Duration(seconds: 1)))
-    ).toList();
+    final expenses = getExpenses().where((exp) =>
+        !exp.isTemplate &&
+        exp.date != null &&
+        exp.date!.isAfter(range['start']!.subtract(const Duration(seconds: 1))) &&
+        exp.date!.isBefore(range['end']!.add(const Duration(seconds: 1)))).toList();
 
-    double totalIncome = incomes.fold(0.0, (sum, item) => sum + item.amount);
-    double totalExpense = expenses.fold(0.0, (sum, item) => sum + item.amount);
+    final totalIncome = incomes.fold(0.0, (sum, item) => sum + item.amount);
+    final totalExpense = expenses.fold(0.0, (sum, item) => sum + item.amount);
 
-    double totalLeft = totalIncome - totalExpense;
-    double savingsCap = totalIncome * 0.20;
+    final totalLeft = totalIncome - totalExpense;
+    final savingsCap = totalIncome * 0.20;
 
     double remaining = 0;
     double actualSavings = 0;
 
-    // ✅ Priority 1: Take up to $300 for 'Remaining' first
     if (totalLeft <= 300) {
       remaining = totalLeft > 0 ? totalLeft : 0;
       actualSavings = 0;
     } else {
-      remaining = 300; // Pocket money floor
-      double surplus = totalLeft - 300;
-
-      // ✅ Priority 2: Savings takes the overflow up to the 20% cap
+      remaining = 300;
+      final surplus = totalLeft - 300;
       if (surplus <= savingsCap) {
         actualSavings = surplus;
       } else {
-        // ✅ Priority 3: Anything over the 20% cap flows back to 'Remaining'
         actualSavings = savingsCap;
         remaining += (surplus - savingsCap);
       }
@@ -129,10 +149,11 @@ class StorageService {
     return {
       'income': totalIncome,
       'expenses': totalExpense,
-      'savings': actualSavings, 
+      'savings': actualSavings,
       'remaining': remaining,
     };
   }
+
   // --- INCOME LOGIC ---
   static List<Income> getIncomes() => Hive.box<Income>(incomeBox).values.toList();
   static Future<void> saveIncome(Income income) async => Hive.box<Income>(incomeBox).put(income.id, income);
@@ -145,7 +166,7 @@ class StorageService {
       amount: template.amount,
       category: template.category,
       frequency: template.frequency,
-      date: range['start']!, 
+      date: range['start']!,
     );
     await saveIncome(instance);
   }
@@ -162,39 +183,24 @@ class StorageService {
     await saveExpense(instance);
   }
 
+  // --- EXPENSE CATEGORY LOGIC ---
   static List<String> getExpenseCategories() => Hive.box<String>(expenseCategoryBox).values.toList();
 
-}
-// TEMPORARY: Paste at the end of StorageService.init()
-final expenseBoxInstance = Hive.box<Expense>(expenseBox);
-final templates = expenseBoxInstance.values.where((e) => e.isTemplate).toList();
+  static Future<void> saveExpenseCategory(String category) async {
+    final box = Hive.box<String>(expenseCategoryBox);
+    if (!box.values.contains(category)) {
+      await box.add(category);
+    }
+  }
 
-for (var template in templates) {
-  switch (template.name) {
-    case 'RAC Car Insurance':
-      template.amount = 88.0; // Put your REAL monthly total here
-      template.frequency = Frequency.monthly;
-      template.save();
-      break;
-    case 'RAC Home Insurance':
-      template.amount = 99.0; // Put your REAL monthly total here
-      template.frequency = Frequency.monthly;
-      template.save();
-      break;
-    case 'NBN':
-      template.amount = 65.0; // Put your REAL monthly total here
-      template.frequency = Frequency.monthly;
-      template.save();
-      break;
-    case 'Netflix':
-      template.amount = 22.99; // Put your REAL monthly total here
-      template.frequency = Frequency.monthly;
-      template.save();
-      break;
-    case 'Mobile':
-      template.amount = 45.0; // Put your REAL monthly total here
-      template.frequency = Frequency.monthly;
-      template.save();
-      break;
+  static Future<void> deleteExpenseCategory(String category) async {
+    final box = Hive.box<String>(expenseCategoryBox);
+    final key = box.keys.firstWhere(
+      (k) => box.get(k) == category,
+      orElse: () => null,
+    );
+    if (key != null) {
+      await box.delete(key);
+    }
   }
 }
