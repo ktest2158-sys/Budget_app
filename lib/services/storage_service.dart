@@ -153,7 +153,28 @@ Expense(name: 'Birthday', amount: 70.0, category: 'Entertainment', frequency: Fr
       'remaining': remaining,
     };
   }
+static List<ChartData> getCategoryTotals(int offset) {
+    final range = getFortnightRange(offset);
+    final Map<String, double> categoryMap = {};
 
+    // 1. Get only real, checked-off expenses for this period
+    final checkedOffExpenses = getExpenses().where((exp) =>
+        !exp.isTemplate &&
+        exp.date != null &&
+        exp.date!.isAfter(range['start']!.subtract(const Duration(seconds: 1))) &&
+        exp.date!.isBefore(range['end']!.add(const Duration(seconds: 1)))
+    ).toList();
+
+    // 2. Sum them up by category name
+    for (var exp in checkedOffExpenses) {
+      categoryMap[exp.category] = (categoryMap[exp.category] ?? 0) + exp.amount;
+    }
+
+    // 3. Convert map to a list for the chart
+    return categoryMap.entries
+        .map((entry) => ChartData(entry.key, entry.value))
+        .toList();
+  }
   // --- INCOME LOGIC ---
   static List<Income> getIncomes() => Hive.box<Income>(incomeBox).values.toList();
   static Future<void> saveIncome(Income income) async => Hive.box<Income>(incomeBox).put(income.id, income);
@@ -203,5 +224,10 @@ Expense(name: 'Birthday', amount: 70.0, category: 'Entertainment', frequency: Fr
       await box.delete(key);
     }
   }
+}
+class ChartData {
+  ChartData(this.category, this.amount);
+  final String category;
+  final double amount;
 }
 
