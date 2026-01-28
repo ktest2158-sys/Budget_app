@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
 import 'expense_list_screen.dart';
 import 'income_list_screen.dart';
-// Import your settings screen here if you have one
-// import 'settings_screen.dart'; 
+import 'package:syncfusion_flutter_charts/charts.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -21,7 +20,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final range = StorageService.getFortnightRange(fortnightOffset);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50], // Softer background
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('Budget Dashboard', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
@@ -29,14 +28,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         actions: [
-          // ✅ Restored Settings Icon
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () {
-              // Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+              // Navigation to settings would go here
             },
           ),
-          // Refresh Icon
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => setState(() {}),
@@ -46,7 +43,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // --- Improved Fortnight Navigation ---
+            // --- Fortnight Navigation ---
             Container(
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -79,15 +76,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
 
-            // --- Updated Themed Summary Cards ---
+            // --- Summary Cards ---
             _buildSummaryCard("Total Income", summary['income']!, Colors.teal),
             _buildSummaryCard("Total Expenses Paid", summary['expenses']!, Colors.blueGrey),
+            
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 30, vertical: 10),
               child: Divider(),
             ),
+            
             _buildSummaryCard("Savings Cap", summary['savings']!, Colors.indigo),
             _buildSummaryCard("Remaining", summary['remaining']!, Colors.deepPurple),
+
+            const SizedBox(height: 20),
+
+            // --- CHART CARD (Matches your image) ---
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    "Expenses by Category",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 10),
+                  SfCircularChart(
+                    legend: const Legend(
+                      isVisible: true, 
+                      position: LegendPosition.bottom,
+                      overflowMode: LegendItemOverflowMode.wrap,
+                    ),
+                    palette: const <Color>[
+                      Colors.teal, Colors.indigo, Colors.deepPurple, 
+                      Colors.blueGrey, Colors.orange, Colors.redAccent
+                    ],
+                    series: <CircularSeries>[
+                      DoughnutSeries<ChartData, String>(
+                        dataSource: StorageService.getCategoryTotals(fortnightOffset),
+                        xValueMapper: (ChartData data, _) => data.category,
+                        yValueMapper: (ChartData data, _) => data.amount,
+                        innerRadius: '70%',
+                        dataLabelSettings: const DataLabelSettings(
+                          isVisible: true,
+                          labelPosition: ChartDataLabelPosition.outside,
+                          textStyle: TextStyle(fontSize: 10),
+                        ),
+                        enableTooltip: true,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
 
             const SizedBox(height: 30),
 
@@ -141,7 +193,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         height: 55,
         child: OutlinedButton.icon(
           onPressed: onPressed,
-          // ✅ FIXED: Removed 'const' because 'icon' is a dynamic variable
           icon: Icon(icon, color: color), 
           label: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
           style: OutlinedButton.styleFrom(
@@ -156,7 +207,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       height: 55,
       child: ElevatedButton.icon(
         onPressed: onPressed,
-        // ✅ FIXED: Removed 'const' because 'icon' is a dynamic variable
         icon: Icon(icon, color: Colors.white), 
         label: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
         style: ElevatedButton.styleFrom(
