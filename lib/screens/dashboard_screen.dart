@@ -31,7 +31,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () {
-              // Navigation to settings would go here
+              // Navigation to settings logic
             },
           ),
           IconButton(
@@ -90,7 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             const SizedBox(height: 20),
 
-            // --- CHART CARD (Matches your image) ---
+            // --- CHART CARD (Matches your reference image) ---
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.all(16),
@@ -118,16 +118,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       position: LegendPosition.bottom,
                       overflowMode: LegendItemOverflowMode.wrap,
                     ),
+                    // Palette colors chosen to match the Teal, Indigo, and Purple theme
                     palette: const <Color>[
-                      Colors.teal, Colors.indigo, Colors.deepPurple, 
-                      Colors.blueGrey, Colors.orange, Colors.redAccent
+                      Colors.teal, 
+                      Colors.indigo, 
+                      Colors.deepPurple, 
+                      Colors.blueGrey, 
+                      Colors.orange, 
+                      Colors.redAccent
                     ],
                     series: <CircularSeries>[
                       DoughnutSeries<ChartData, String>(
                         dataSource: StorageService.getCategoryTotals(fortnightOffset),
                         xValueMapper: (ChartData data, _) => data.category,
                         yValueMapper: (ChartData data, _) => data.amount,
-                        innerRadius: '70%',
+                        innerRadius: '70%', // Creates the thin, modern donut look
                         dataLabelSettings: const DataLabelSettings(
                           isVisible: true,
                           labelPosition: ChartDataLabelPosition.outside,
