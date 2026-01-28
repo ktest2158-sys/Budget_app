@@ -30,9 +30,8 @@ class StorageService {
     final catBox = Hive.box<String>(expenseCategoryBox);
     if (catBox.isEmpty) {
       await catBox.addAll([
-        'Salary', 'Rental', 'Government', 'Debt', 'Family', 'Kids',
-        'Housing', 'Transport', 'Utilities', 'Health', 'Digital',
-        'Grocery', 'Savings', 'Miscellaneous',
+       'Salary', 'Rental', 'Government', 'Home', 'Personal', 'Kids',
+    'Transport', 'Utilities', 'Grocery', 'Entertainment', 'Miscellaneous',
       ]);
     }
 
@@ -75,25 +74,26 @@ class StorageService {
     final expenseBoxInstance = Hive.box<Expense>(expenseBox);
     if (expenseBoxInstance.isEmpty) {
       await expenseBoxInstance.addAll([
-        Expense(name: 'Loan Repayment 1', amount: 800.0, category: 'Home', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'Loan Repayment 2', amount: 125.0, category: 'Home', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'CSA Payment', amount: 420.0, category: 'Government', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'OSHC', amount: 150.0, category: 'Kids', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'Spriggy', amount: 20.0, category: 'Kids', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'City of Swan', amount: 90.0, category: 'Home', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'RAC Car Insurance', amount: 88.0, category: 'Transport', frequency: Frequency.monthly, isTemplate: true),
-        Expense(name: 'RAC Home Insurance', amount: 100.0, category: 'Home', frequency: Frequency.monthly, isTemplate: true),
-        Expense(name: 'Water Corp', amount: 75.0, category: 'Utilities', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'Synergy (Elec)', amount: 30.0, category: 'Utilities', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'AGL (Gas)', amount: 22.0, category: 'Utilities', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'NBN', amount: 60.0, category: 'Utilities', frequency: Frequency.monthly, isTemplate: true),
-        Expense(name: 'Mobile', amount: 40.0, category: 'Utilities', frequency: Frequency.monthly, isTemplate: true),
-        Expense(name: 'Gym (Chasing Better)', amount: 24.34, category: 'Health', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'YouTube', amount: 10.0, category: 'Digital', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'Netflix', amount: 10.0, category: 'Digital', frequency: Frequency.monthly, isTemplate: true),
-        Expense(name: 'Food', amount: 600.0, category: 'Grocery', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'Holiday Savings', amount: 300.0, category: 'Entertainment', frequency: Frequency.fortnightly, isTemplate: true),
-        Expense(name: 'Birthday Savings', amount: 70.0, category: 'Entertainment', frequency: Frequency.fortnightly, isTemplate: true),
+       // Expense Templates
+Expense(name: 'Loan Repayment 1', amount: 800.0, category: 'Home', frequency: Frequency.fortnightly, isTemplate: true),
+Expense(name: 'Loan Repayment 2', amount: 125.0, category: 'Home', frequency: Frequency.fortnightly, isTemplate: true),
+Expense(name: 'CSA Payment', amount: 420.0, category: 'Government', frequency: Frequency.fortnightly, isTemplate: true),
+Expense(name: 'OSHC', amount: 150.0, category: 'Kids', frequency: Frequency.fortnightly, isTemplate: true),
+Expense(name: 'Spriggy', amount: 10.0, category: 'Kids', frequency: Frequency.fortnightly, isTemplate: true),
+Expense(name: 'City of Swan', amount: 90.0, category: 'Home', frequency: Frequency.fortnightly, isTemplate: true),
+Expense(name: 'RAC Car Insurance', amount: 88.0, category: 'Transport', frequency: Frequency.monthly, isTemplate: true),
+Expense(name: 'RAC Home Insurance', amount: 100.0, category: 'Home', frequency: Frequency.monthly, isTemplate: true),
+Expense(name: 'Water Corp', amount: 75.0, category: 'Utilities', frequency: Frequency.fortnightly, isTemplate: true),
+Expense(name: 'Synergy (Elec)', amount: 30.0, category: 'Utilities', frequency: Frequency.fortnightly, isTemplate: true),
+Expense(name: 'AGL (Gas)', amount: 22.0, category: 'Utilities', frequency: Frequency.fortnightly, isTemplate: true),
+Expense(name: 'NBN', amount: 60.0, category: 'Utilities', frequency: Frequency.monthly, isTemplate: true),
+Expense(name: 'YouTube', amount: 10.0, category: 'Utilities', frequency: Frequency.fortnightly, isTemplate: true),
+Expense(name: 'Netflix', amount: 10.0, category: 'Utilities', frequency: Frequency.monthly, isTemplate: true),
+Expense(name: 'Mobile', amount: 40.0, category: 'Personal', frequency: Frequency.monthly, isTemplate: true),
+Expense(name: 'Gym (Chasing Better)', amount: 24.34, category: 'Personal', frequency: Frequency.fortnightly, isTemplate: true),
+Expense(name: 'Food', amount: 600.0, category: 'Grocery', frequency: Frequency.fortnightly, isTemplate: true),
+Expense(name: 'Holiday', amount: 300.0, category: 'Entertainment', frequency: Frequency.fortnightly, isTemplate: true),
+Expense(name: 'Birthday', amount: 70.0, category: 'Entertainment', frequency: Frequency.fortnightly, isTemplate: true),
       ]);
     }
   }
@@ -204,3 +204,4 @@ class StorageService {
     }
   }
 }
+
