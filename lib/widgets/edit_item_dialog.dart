@@ -69,7 +69,7 @@ class _EditItemDialogState extends State<EditItemDialog> {
             const SizedBox(height: 8),
             if (widget.isExpense)
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 decoration: const InputDecoration(labelText: 'Category'),
                 items: categories
                     .map((cat) => DropdownMenuItem(
@@ -97,12 +97,13 @@ class _EditItemDialogState extends State<EditItemDialog> {
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(labelText: 'Amount'),
-              validator: (v) =>
-                  v == null || double.tryParse(v) == null ? 'Enter valid amount' : null,
+              validator: (v) => v == null || double.tryParse(v) == null
+                  ? 'Enter valid amount'
+                  : null,
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<Frequency>(
-              value: _selectedFrequency,
+              initialValue: _selectedFrequency,
               decoration: const InputDecoration(labelText: 'Frequency'),
               items: Frequency.values
                   .map((f) => DropdownMenuItem(
@@ -119,7 +120,8 @@ class _EditItemDialogState extends State<EditItemDialog> {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel')),
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {

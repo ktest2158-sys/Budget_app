@@ -4,7 +4,8 @@ import '../services/storage_service.dart';
 
 class AddItemScreen extends StatefulWidget {
   final String title;
-  final Function(String name, String category, double amount, Frequency frequency) onSave;
+  final Function(
+      String name, String category, double amount, Frequency frequency) onSave;
 
   const AddItemScreen({super.key, required this.title, required this.onSave});
 
@@ -16,9 +17,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
-  
+
   String? _selectedCategory;
-  Frequency _selectedFrequency = Frequency.fortnightly; 
+  Frequency _selectedFrequency = Frequency.fortnightly;
 
   late List<String> _categories;
 
@@ -44,43 +45,49 @@ class _AddItemScreenState extends State<AddItemScreen> {
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Description'),
-                validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
-              
+
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 decoration: const InputDecoration(labelText: 'Category'),
                 items: _categories.map((String category) {
-                  return DropdownMenuItem<String>(value: category, child: Text(category));
+                  return DropdownMenuItem<String>(
+                      value: category, child: Text(category));
                 }).toList(),
                 onChanged: (value) => setState(() => _selectedCategory = value),
                 validator: (value) => value == null ? 'Required' : null,
               ),
-              
+
               const SizedBox(height: 16),
 
               // ✅ Frequency Dropdown including "One-off"
               DropdownButtonFormField<Frequency>(
-                value: _selectedFrequency,
+                initialValue: _selectedFrequency,
                 decoration: const InputDecoration(labelText: 'Frequency'),
                 items: Frequency.values.map((Frequency freq) {
                   return DropdownMenuItem<Frequency>(
                     value: freq,
-                    child: Text(freq.name[0].toUpperCase() + freq.name.substring(1)),
+                    child: Text(
+                        freq.name[0].toUpperCase() + freq.name.substring(1)),
                   );
                 }).toList(),
                 onChanged: (value) {
                   if (value != null) setState(() => _selectedFrequency = value);
                 },
               ),
-              
+
               const SizedBox(height: 16),
               TextFormField(
                 controller: _amountController,
                 decoration: const InputDecoration(labelText: 'Amount (\$)'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: (value) => double.tryParse(value ?? '') == null ? 'Enter a valid number' : null,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                validator: (value) => double.tryParse(value ?? '') == null
+                    ? 'Enter a valid number'
+                    : null,
               ),
               const SizedBox(height: 24),
               ElevatedButton(

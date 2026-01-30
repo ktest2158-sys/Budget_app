@@ -16,6 +16,7 @@ dependencies:
   intl: ^0.20.2
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+  syncfusion_flutter_charts: ^32.1.25
 
 dev_dependencies:
   flutter_test:
