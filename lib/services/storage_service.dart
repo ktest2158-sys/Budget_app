@@ -30,8 +30,17 @@ class StorageService {
     final catBox = Hive.box<String>(expenseCategoryBox);
     if (catBox.isEmpty) {
       await catBox.addAll([
-       'Salary', 'Rental', 'Government', 'Home', 'Personal', 'Kids',
-    'Transport', 'Utilities', 'Grocery', 'Entertainment', 'Miscellaneous',
+        'Salary',
+        'Rental',
+        'Government',
+        'Home',
+        'Personal',
+        'Kids',
+        'Transport',
+        'Utilities',
+        'Grocery',
+        'Entertainment',
+        'Miscellaneous',
       ]);
     }
 
@@ -74,26 +83,120 @@ class StorageService {
     final expenseBoxInstance = Hive.box<Expense>(expenseBox);
     if (expenseBoxInstance.isEmpty) {
       await expenseBoxInstance.addAll([
-       // Expense Templates
-Expense(name: 'Loan Repayment 1', amount: 800.0, category: 'Home', frequency: Frequency.fortnightly, isTemplate: true),
-Expense(name: 'Loan Repayment 2', amount: 125.0, category: 'Home', frequency: Frequency.fortnightly, isTemplate: true),
-Expense(name: 'CSA Payment', amount: 420.0, category: 'Government', frequency: Frequency.fortnightly, isTemplate: true),
-Expense(name: 'OSHC', amount: 150.0, category: 'Kids', frequency: Frequency.fortnightly, isTemplate: true),
-Expense(name: 'Spriggy', amount: 10.0, category: 'Kids', frequency: Frequency.fortnightly, isTemplate: true),
-Expense(name: 'City of Swan', amount: 90.0, category: 'Home', frequency: Frequency.fortnightly, isTemplate: true),
-Expense(name: 'RAC Car Insurance', amount: 88.0, category: 'Transport', frequency: Frequency.monthly, isTemplate: true),
-Expense(name: 'RAC Home Insurance', amount: 100.0, category: 'Home', frequency: Frequency.monthly, isTemplate: true),
-Expense(name: 'Water Corp', amount: 75.0, category: 'Utilities', frequency: Frequency.fortnightly, isTemplate: true),
-Expense(name: 'Synergy (Elec)', amount: 30.0, category: 'Utilities', frequency: Frequency.fortnightly, isTemplate: true),
-Expense(name: 'AGL (Gas)', amount: 22.0, category: 'Utilities', frequency: Frequency.fortnightly, isTemplate: true),
-Expense(name: 'NBN', amount: 60.0, category: 'Utilities', frequency: Frequency.monthly, isTemplate: true),
-Expense(name: 'YouTube', amount: 10.0, category: 'Utilities', frequency: Frequency.fortnightly, isTemplate: true),
-Expense(name: 'Netflix', amount: 10.0, category: 'Utilities', frequency: Frequency.monthly, isTemplate: true),
-Expense(name: 'Mobile', amount: 40.0, category: 'Personal', frequency: Frequency.monthly, isTemplate: true),
-Expense(name: 'Gym (Chasing Better)', amount: 24.34, category: 'Personal', frequency: Frequency.fortnightly, isTemplate: true),
-Expense(name: 'Food', amount: 600.0, category: 'Grocery', frequency: Frequency.fortnightly, isTemplate: true),
-Expense(name: 'Holiday', amount: 300.0, category: 'Entertainment', frequency: Frequency.fortnightly, isTemplate: true),
-Expense(name: 'Birthday', amount: 70.0, category: 'Entertainment', frequency: Frequency.fortnightly, isTemplate: true),
+        Expense(
+            name: 'Loan Repayment 1',
+            amount: 800.0,
+            category: 'Home',
+            frequency: Frequency.fortnightly,
+            isTemplate: true),
+        Expense(
+            name: 'Loan Repayment 2',
+            amount: 125.0,
+            category: 'Home',
+            frequency: Frequency.fortnightly,
+            isTemplate: true),
+        Expense(
+            name: 'CSA Payment',
+            amount: 420.0,
+            category: 'Government',
+            frequency: Frequency.fortnightly,
+            isTemplate: true),
+        Expense(
+            name: 'OSHC',
+            amount: 150.0,
+            category: 'Kids',
+            frequency: Frequency.fortnightly,
+            isTemplate: true),
+        Expense(
+            name: 'Spriggy',
+            amount: 10.0,
+            category: 'Kids',
+            frequency: Frequency.fortnightly,
+            isTemplate: true),
+        Expense(
+            name: 'City of Swan',
+            amount: 90.0,
+            category: 'Home',
+            frequency: Frequency.fortnightly,
+            isTemplate: true),
+        Expense(
+            name: 'RAC Car Insurance',
+            amount: 88.0,
+            category: 'Transport',
+            frequency: Frequency.monthly,
+            isTemplate: true),
+        Expense(
+            name: 'RAC Home Insurance',
+            amount: 100.0,
+            category: 'Home',
+            frequency: Frequency.monthly,
+            isTemplate: true),
+        Expense(
+            name: 'Water Corp',
+            amount: 75.0,
+            category: 'Utilities',
+            frequency: Frequency.fortnightly,
+            isTemplate: true),
+        Expense(
+            name: 'Synergy (Elec)',
+            amount: 30.0,
+            category: 'Utilities',
+            frequency: Frequency.fortnightly,
+            isTemplate: true),
+        Expense(
+            name: 'AGL (Gas)',
+            amount: 22.0,
+            category: 'Utilities',
+            frequency: Frequency.fortnightly,
+            isTemplate: true),
+        Expense(
+            name: 'NBN',
+            amount: 60.0,
+            category: 'Utilities',
+            frequency: Frequency.monthly,
+            isTemplate: true),
+        Expense(
+            name: 'YouTube',
+            amount: 10.0,
+            category: 'Utilities',
+            frequency: Frequency.fortnightly,
+            isTemplate: true),
+        Expense(
+            name: 'Netflix',
+            amount: 10.0,
+            category: 'Utilities',
+            frequency: Frequency.monthly,
+            isTemplate: true),
+        Expense(
+            name: 'Mobile',
+            amount: 40.0,
+            category: 'Personal',
+            frequency: Frequency.monthly,
+            isTemplate: true),
+        Expense(
+            name: 'Gym (Chasing Better)',
+            amount: 24.34,
+            category: 'Personal',
+            frequency: Frequency.fortnightly,
+            isTemplate: true),
+        Expense(
+            name: 'Food',
+            amount: 600.0,
+            category: 'Grocery',
+            frequency: Frequency.fortnightly,
+            isTemplate: true),
+        Expense(
+            name: 'Holiday',
+            amount: 300.0,
+            category: 'Entertainment',
+            frequency: Frequency.fortnightly,
+            isTemplate: true),
+        Expense(
+            name: 'Birthday',
+            amount: 70.0,
+            category: 'Entertainment',
+            frequency: Frequency.fortnightly,
+            isTemplate: true),
       ]);
     }
   }
@@ -107,21 +210,28 @@ Expense(name: 'Birthday', amount: 70.0, category: 'Entertainment', frequency: Fr
   static Map<String, DateTime> getFortnightRange(int userOffset) {
     final totalOffset = getCurrentFortnightOffset() + userOffset;
     final start = appStartDate.add(Duration(days: totalOffset * 14));
-    final end = start.add(const Duration(days: 13, hours: 23, minutes: 59, seconds: 59));
+    final end = start
+        .add(const Duration(days: 13, hours: 23, minutes: 59, seconds: 59));
     return {'start': start, 'end': end};
   }
 
   static Map<String, double> getDashboardSummary(int offset) {
     final range = getFortnightRange(offset);
-    final incomes = getIncomes().where((inc) =>
-        inc.date.isAfter(range['start']!.subtract(const Duration(seconds: 1))) &&
-        inc.date.isBefore(range['end']!.add(const Duration(seconds: 1)))).toList();
+    final incomes = getIncomes()
+        .where((inc) =>
+            inc.date.isAfter(
+                range['start']!.subtract(const Duration(seconds: 1))) &&
+            inc.date.isBefore(range['end']!.add(const Duration(seconds: 1))))
+        .toList();
 
-    final expenses = getExpenses().where((exp) =>
-        !exp.isTemplate &&
-        exp.date != null &&
-        exp.date!.isAfter(range['start']!.subtract(const Duration(seconds: 1))) &&
-        exp.date!.isBefore(range['end']!.add(const Duration(seconds: 1)))).toList();
+    final expenses = getExpenses()
+        .where((exp) =>
+            !exp.isTemplate &&
+            exp.date != null &&
+            exp.date!.isAfter(
+                range['start']!.subtract(const Duration(seconds: 1))) &&
+            exp.date!.isBefore(range['end']!.add(const Duration(seconds: 1))))
+        .toList();
 
     final totalIncome = incomes.fold(0.0, (sum, item) => sum + item.amount);
     final totalExpense = expenses.fold(0.0, (sum, item) => sum + item.amount);
@@ -153,32 +263,36 @@ Expense(name: 'Birthday', amount: 70.0, category: 'Entertainment', frequency: Fr
       'remaining': remaining,
     };
   }
-static List<ChartData> getCategoryTotals(int offset) {
+
+  static List<ChartData> getCategoryTotals(int offset) {
     final range = getFortnightRange(offset);
     final Map<String, double> categoryMap = {};
 
-    // 1. Get only real, checked-off expenses for this period
-    final checkedOffExpenses = getExpenses().where((exp) =>
-        !exp.isTemplate &&
-        exp.date != null &&
-        exp.date!.isAfter(range['start']!.subtract(const Duration(seconds: 1))) &&
-        exp.date!.isBefore(range['end']!.add(const Duration(seconds: 1)))
-    ).toList();
+    final checkedOffExpenses = getExpenses()
+        .where((exp) =>
+            !exp.isTemplate &&
+            exp.date != null &&
+            exp.date!.isAfter(
+                range['start']!.subtract(const Duration(seconds: 1))) &&
+            exp.date!.isBefore(range['end']!.add(const Duration(seconds: 1))))
+        .toList();
 
-    // 2. Sum them up by category name
     for (var exp in checkedOffExpenses) {
       categoryMap[exp.category] = (categoryMap[exp.category] ?? 0) + exp.amount;
     }
 
-    // 3. Convert map to a list for the chart
     return categoryMap.entries
         .map((entry) => ChartData(entry.key, entry.value))
         .toList();
   }
+
   // --- INCOME LOGIC ---
-  static List<Income> getIncomes() => Hive.box<Income>(incomeBox).values.toList();
-  static Future<void> saveIncome(Income income) async => Hive.box<Income>(incomeBox).put(income.id, income);
-  static Future<void> deleteIncome(String id) async => Hive.box<Income>(incomeBox).delete(id);
+  static List<Income> getIncomes() =>
+      Hive.box<Income>(incomeBox).values.toList();
+  static Future<void> saveIncome(Income income) async =>
+      Hive.box<Income>(incomeBox).put(income.id, income);
+  static Future<void> deleteIncome(String id) async =>
+      Hive.box<Income>(incomeBox).delete(id);
 
   static Future<void> checkOffIncome(Income template, int offset) async {
     final range = getFortnightRange(offset);
@@ -193,10 +307,14 @@ static List<ChartData> getCategoryTotals(int offset) {
   }
 
   // --- EXPENSE LOGIC ---
-  static List<Expense> getExpenses() => Hive.box<Expense>(expenseBox).values.toList();
-  static List<Expense> getTemplates() => Hive.box<Expense>(expenseBox).values.where((e) => e.isTemplate).toList();
-  static Future<void> saveExpense(Expense expense) async => Hive.box<Expense>(expenseBox).put(expense.id, expense);
-  static Future<void> deleteExpense(String id) async => Hive.box<Expense>(expenseBox).delete(id);
+  static List<Expense> getExpenses() =>
+      Hive.box<Expense>(expenseBox).values.toList();
+  static List<Expense> getTemplates() =>
+      Hive.box<Expense>(expenseBox).values.where((e) => e.isTemplate).toList();
+  static Future<void> saveExpense(Expense expense) async =>
+      Hive.box<Expense>(expenseBox).put(expense.id, expense);
+  static Future<void> deleteExpense(String id) async =>
+      Hive.box<Expense>(expenseBox).delete(id);
 
   static Future<void> checkOffExpense(Expense template, int offset) async {
     final range = getFortnightRange(offset);
@@ -205,7 +323,8 @@ static List<ChartData> getCategoryTotals(int offset) {
   }
 
   // --- EXPENSE CATEGORY LOGIC ---
-  static List<String> getExpenseCategories() => Hive.box<String>(expenseCategoryBox).values.toList();
+  static List<String> getExpenseCategories() =>
+      Hive.box<String>(expenseCategoryBox).values.toList();
 
   static Future<void> saveExpenseCategory(String category) async {
     final box = Hive.box<String>(expenseCategoryBox);
@@ -224,10 +343,25 @@ static List<ChartData> getCategoryTotals(int offset) {
       await box.delete(key);
     }
   }
+
+  // --- SETTINGS: Fortnight Start ---
+  static DateTime getFortnightStart() {
+    final box = Hive.box<String>(settingsBox);
+    final stored = box.get(fortnightStartKey);
+    if (stored != null) {
+      return DateTime.parse(stored);
+    }
+    return appStartDate;
+  }
+
+  static Future<void> saveFortnightStart(DateTime date) async {
+    final box = Hive.box<String>(settingsBox);
+    await box.put(fortnightStartKey, date.toIso8601String());
+  }
 }
+
 class ChartData {
   ChartData(this.category, this.amount);
   final String category;
   final double amount;
 }
-

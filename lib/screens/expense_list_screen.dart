@@ -45,9 +45,13 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
 
   void _checkOffExpense(Expense template) async {
     await StorageService.checkOffExpense(template, widget.fortnightOffset);
+
+    if (!mounted) return; // <- prevents using context if widget disposed
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${template.name} checked off!')),
     );
+
     _loadExpenses(); // refresh UI
   }
 

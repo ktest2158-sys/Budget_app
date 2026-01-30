@@ -6,10 +6,10 @@ import 'screens/dashboard_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
-  
+
   // ✅ Explicitly uses the service folder version
-  await StorageService.init(); 
-  
+  await StorageService.init();
+
   runApp(const BudgetApp());
 }
 
@@ -26,7 +26,7 @@ class BudgetApp extends StatelessWidget {
       ),
       debugShowCheckedModeBanner: false,
       // ✅ Removed 'const' to allow the Dashboard to refresh its data
-      home: DashboardScreen(), 
+      home: const DashboardScreen(),
     );
   }
 }
