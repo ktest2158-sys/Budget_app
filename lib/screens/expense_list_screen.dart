@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
 import '../models/expense.dart';
 import '../models/frequency.dart';
+import 'add_item_screen.dart'; // Ensure this matches your filename
 
 class ExpenseListScreen extends StatefulWidget {
   final int fortnightOffset;
@@ -23,7 +24,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
 
   void _loadExpenses() {
     final range = StorageService.getFortnightRange(widget.fortnightOffset);
-
     final allExpenses = StorageService.getExpenses();
 
     paidInFortnight = allExpenses
@@ -36,7 +36,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         .toList();
 
     templates = StorageService.getTemplates().where((template) {
-      // Hide template if already paid
       return !paidInFortnight.any((paid) => paid.name == template.name);
     }).toList();
 
@@ -45,14 +44,12 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
 
   void _checkOffExpense(Expense template) async {
     await StorageService.checkOffExpense(template, widget.fortnightOffset);
-
-    if (!mounted) return; // <- prevents using context if widget disposed
+    if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${template.name} checked off!')),
     );
-
-    _loadExpenses(); // refresh UI
+    _loadExpenses();
   }
 
   String _frequencyText(Frequency frequency) {
@@ -75,11 +72,39 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Manage Expenses')),
+      appBar: AppBar(
+        title: const Text('Manage Expenses'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddItemScreen(
+                    title: "Add One-Off Expense",
+                    onSave: (name, category, amount, frequency) async {
+                      // Logic to save a non-template expense
+                      await StorageService.addExpense(
+                        name: name,
+                        category: category,
+                        amount: amount,
+                        frequency: frequency,
+                        isTemplate: false,
+                        date: DateTime.now(),
+                      );
+                    },
+                  ),
+                ),
+              );
+              _loadExpenses(); // Refresh list when returning
+            },
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          // --- Remaining Templates ---
           if (templates.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
@@ -115,10 +140,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                   ),
                 )),
           ],
-
           const Divider(height: 40, thickness: 1),
-
-          // --- Paid Expenses ---
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
             child: Text(

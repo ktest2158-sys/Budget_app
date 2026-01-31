@@ -316,6 +316,25 @@ class StorageService {
   static Future<void> deleteExpense(String id) async =>
       Hive.box<Expense>(expenseBox).delete(id);
 
+  static Future<void> addExpense({
+    required String name,
+    required String category,
+    required double amount,
+    required Frequency frequency,
+    required bool isTemplate,
+    DateTime? date,
+  }) async {
+    final newExpense = Expense(
+      name: name,
+      category: category,
+      amount: amount,
+      frequency: frequency,
+      isTemplate: isTemplate,
+      date: date,
+    );
+    await saveExpense(newExpense);
+  }
+
   static Future<void> checkOffExpense(Expense template, int offset) async {
     final range = getFortnightRange(offset);
     final instance = template.createInstance(range['start']!);
