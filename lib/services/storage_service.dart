@@ -341,6 +341,20 @@ class StorageService {
     await saveExpense(instance);
   }
 
+  // ✅ New Filter Method for Chart Drill-down
+  static List<Expense> getExpensesByCategory(int offset, String category) {
+    final range = getFortnightRange(offset);
+    return getExpenses()
+        .where((exp) =>
+            !exp.isTemplate &&
+            exp.category == category &&
+            exp.date != null &&
+            exp.date!.isAfter(
+                range['start']!.subtract(const Duration(seconds: 1))) &&
+            exp.date!.isBefore(range['end']!.add(const Duration(seconds: 1))))
+        .toList();
+  }
+
   // --- EXPENSE CATEGORY LOGIC ---
   static List<String> getExpenseCategories() =>
       Hive.box<String>(expenseCategoryBox).values.toList();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
+import '../models/expense.dart';
 import 'expense_list_screen.dart';
 import 'income_list_screen.dart';
 import 'settings_screen.dart';
@@ -15,10 +16,66 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int fortnightOffset = 0;
 
+  // ✅ Show details when a chart slice is tapped
+  void _showCategoryDetails(String category) {
+    final categoryExpenses =
+        StorageService.getExpensesByCategory(fortnightOffset, category);
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "$category Details",
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const Divider(),
+              if (categoryExpenses.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: Text("No expenses recorded for this category."),
+                )
+              else
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: categoryExpenses.length,
+                    itemBuilder: (context, index) {
+                      final exp = categoryExpenses[index];
+                      return ListTile(
+                        leading: const Icon(Icons.arrow_right),
+                        title: Text(exp.name),
+                        trailing: Text("\$${exp.amount.toStringAsFixed(2)}",
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text(exp.date != null
+                            ? "${exp.date!.day}/${exp.date!.month}/${exp.date!.year}"
+                            : ""),
+                      );
+                    },
+                  ),
+                ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final summary = StorageService.getDashboardSummary(fortnightOffset);
     final range = StorageService.getFortnightRange(fortnightOffset);
+    final chartData = StorageService.getCategoryTotals(fortnightOffset);
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -122,7 +179,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               /// --- Doughnut Chart ---
               SizedBox(
-                height: 460, // adjust as needed
+                height: 460,
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -161,8 +218,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ],
                           series: <CircularSeries>[
                             DoughnutSeries<ChartData, String>(
-                              dataSource: StorageService.getCategoryTotals(
-                                  fortnightOffset),
+                              dataSource: chartData,
                               xValueMapper: (ChartData data, _) =>
                                   data.category,
                               yValueMapper: (ChartData data, _) => data.amount,
@@ -173,6 +229,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 textStyle: TextStyle(fontSize: 10),
                               ),
                               enableTooltip: true,
+                              // ✅ Detect tap on segments - FIXED CLASS NAME
+                              onPointTap: (ChartPointDetails args) {
+                                if (args.pointIndex != null) {
+                                  final category =
+                                      chartData[args.pointIndex!].category;
+                                  _showCategoryDetails(category);
+                                }
+                              },
                             ),
                           ],
                         ),
