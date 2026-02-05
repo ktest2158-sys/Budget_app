@@ -201,44 +201,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       const SizedBox(height: 7),
                       Expanded(
-                        child: SfCircularChart(
-                          legend: const Legend(
-                            isVisible: true,
-                            position: LegendPosition.bottom,
-                            overflowMode: LegendItemOverflowMode.wrap,
-                          ),
-                          palette: const <Color>[
-                            Colors.teal,
-                            Colors.indigo,
-                            Colors.deepPurple,
-                            Colors.blueGrey,
-                            Colors.orange,
-                            Colors.redAccent
-                          ],
-                          series: <CircularSeries>[
-                            DoughnutSeries<ChartData, String>(
-                              dataSource: chartData,
-                              xValueMapper: (ChartData data, _) =>
-                                  data.category,
-                              yValueMapper: (ChartData data, _) => data.amount,
-                              innerRadius: '70%',
-                              dataLabelSettings: const DataLabelSettings(
-                                isVisible: true,
-                                labelPosition: ChartDataLabelPosition.outside,
-                                textStyle: TextStyle(fontSize: 10),
+                        child: chartData.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.pie_chart_outline,
+                                        size: 64, color: Colors.grey[400]),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      "No expenses recorded yet",
+                                      style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 16),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : SfCircularChart(
+                                legend: const Legend(
+                                  isVisible: true,
+                                  position: LegendPosition.bottom,
+                                  overflowMode: LegendItemOverflowMode.wrap,
+                                ),
+                                // ✅ FIXED: Use expanded color palette from StorageService
+                                palette: StorageService.getChartColors(),
+                                series: <CircularSeries>[
+                                  DoughnutSeries<ChartData, String>(
+                                    dataSource: chartData,
+                                    xValueMapper: (ChartData data, _) =>
+                                        data.category,
+                                    yValueMapper: (ChartData data, _) =>
+                                        data.amount,
+                                    innerRadius: '70%',
+                                    dataLabelSettings: const DataLabelSettings(
+                                      isVisible: true,
+                                      labelPosition:
+                                          ChartDataLabelPosition.outside,
+                                      textStyle: TextStyle(fontSize: 10),
+                                    ),
+                                    enableTooltip: true,
+                                    // ✅ Detect tap on segments
+                                    onPointTap: (ChartPointDetails args) {
+                                      if (args.pointIndex != null) {
+                                        final category =
+                                            chartData[args.pointIndex!]
+                                                .category;
+                                        _showCategoryDetails(category);
+                                      }
+                                    },
+                                  ),
+                                ],
                               ),
-                              enableTooltip: true,
-                              // ✅ Detect tap on segments - FIXED CLASS NAME
-                              onPointTap: (ChartPointDetails args) {
-                                if (args.pointIndex != null) {
-                                  final category =
-                                      chartData[args.pointIndex!].category;
-                                  _showCategoryDetails(category);
-                                }
-                              },
-                            ),
-                          ],
-                        ),
                       ),
                     ],
                   ),

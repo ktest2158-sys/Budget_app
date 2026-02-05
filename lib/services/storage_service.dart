@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/income.dart';
 import '../models/expense.dart';
 import '../models/frequency.dart';
+import 'package:flutter/material.dart';
 
 class StorageService {
   static const incomeBox = 'incomes';
@@ -14,7 +15,12 @@ class StorageService {
   static const savingsPercentKey = 'savings_percent';
   static const isFirstLaunchKey = 'is_first_launch';
 
-  static final DateTime appStartDate = DateTime(2025, 12, 31);
+  // ✅ FIXED: Use a getter instead of hardcoded date
+  static DateTime get appStartDate {
+    final stored = getFortnightStart();
+    // If no stored date, use today's date as the start
+    return stored;
+  }
 
   // --- INIT ---
   static Future<void> init() async {
@@ -50,9 +56,15 @@ class StorageService {
     // --- Initialize default settings if first launch
     final settingsBoxInstance = Hive.box<String>(settingsBox);
     if (settingsBoxInstance.get(isFirstLaunchKey) == null) {
-      await settingsBoxInstance.put(isFirstLaunchKey, 'false');
+      await settingsBoxInstance.put(isFirstLaunchKey, 'true');
       await settingsBoxInstance.put(minRemainingKey, '300.0');
       await settingsBoxInstance.put(savingsPercentKey, '20.0');
+
+      // ✅ FIXED: Set initial fortnight start to today if not set
+      if (settingsBoxInstance.get(fortnightStartKey) == null) {
+        await settingsBoxInstance.put(
+            fortnightStartKey, DateTime.now().toIso8601String());
+      }
     }
 
     // Note: No hardcoded income or expense templates - users add their own
@@ -83,7 +95,7 @@ class StorageService {
 
   static bool isFirstLaunch() {
     final box = Hive.box<String>(settingsBox);
-    return box.get(isFirstLaunchKey) != 'false';
+    return box.get(isFirstLaunchKey) == 'true';
   }
 
   static Future<void> completeFirstLaunch() async {
@@ -180,6 +192,27 @@ class StorageService {
         .toList();
   }
 
+  // ✅ NEW: Expanded color palette for charts
+  static List<Color> getChartColors() {
+    return const [
+      Color(0xFF2196F3), // Blue
+      Color(0xFF4CAF50), // Green
+      Color(0xFFF44336), // Red
+      Color(0xFFFF9800), // Orange
+      Color(0xFF9C27B0), // Purple
+      Color(0xFF00BCD4), // Cyan
+      Color(0xFFFFEB3B), // Yellow
+      Color(0xFF795548), // Brown
+      Color(0xFF607D8B), // Blue Grey
+      Color(0xFFE91E63), // Pink
+      Color(0xFF3F51B5), // Indigo
+      Color(0xFF009688), // Teal
+      Color(0xFFCDDC39), // Lime
+      Color(0xFFFFC107), // Amber
+      Color(0xFF673AB7), // Deep Purple
+    ];
+  }
+
   // --- INCOME LOGIC ---
   static List<Income> getIncomes() =>
       Hive.box<Income>(incomeBox).values.toList();
@@ -235,7 +268,7 @@ class StorageService {
     await saveExpense(instance);
   }
 
-  // ✅ New Filter Method for Chart Drill-down
+  // ✅ Filter Method for Chart Drill-down
   static List<Expense> getExpensesByCategory(int offset, String category) {
     final range = getFortnightRange(offset);
     return getExpenses()
@@ -260,8 +293,20 @@ class StorageService {
     }
   }
 
+  // ✅ FIXED: Implement category reassignment on delete
   static Future<void> deleteExpenseCategory(String category) async {
     final box = Hive.box<String>(expenseCategoryBox);
+
+    // Reassign all expenses using this category to "Miscellaneous"
+    final allExpenses = getExpenses();
+    for (var expense in allExpenses) {
+      if (expense.category == category) {
+        expense.category = 'Miscellaneous';
+        await saveExpense(expense);
+      }
+    }
+
+    // Now delete the category
     final key = box.keys.firstWhere(
       (k) => box.get(k) == category,
       orElse: () => null,
@@ -278,7 +323,8 @@ class StorageService {
     if (stored != null) {
       return DateTime.parse(stored);
     }
-    return appStartDate;
+    // ✅ FIXED: Default to today instead of hardcoded past date
+    return DateTime.now();
   }
 
   static Future<void> saveFortnightStart(DateTime date) async {
@@ -297,7 +343,7 @@ class StorageService {
     await settingsBoxInstance.put(minRemainingKey, '300.0');
     await settingsBoxInstance.put(savingsPercentKey, '20.0');
     await settingsBoxInstance.put(
-        fortnightStartKey, appStartDate.toIso8601String());
+        fortnightStartKey, DateTime.now().toIso8601String());
   }
 }
 

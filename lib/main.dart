@@ -37,7 +37,7 @@ class BudgetApp extends StatelessWidget {
             );
           }
 
-          // Show onboarding if first launch, otherwise show dashboard
+          // ✅ FIXED: Use the proper isFirstLaunch flag
           final isFirstLaunch = snapshot.data ?? true;
           return isFirstLaunch
               ? const OnboardingScreen()
@@ -48,11 +48,7 @@ class BudgetApp extends StatelessWidget {
   }
 
   Future<bool> _checkFirstLaunch() async {
-    // Check if this is the first launch by looking at settings
-    final hasIncome = StorageService.getIncomes().isNotEmpty;
-    final hasExpenses = StorageService.getExpenses().isNotEmpty;
-
-    // If no income or expense templates exist, treat as first launch
-    return !hasIncome && !hasExpenses;
+    // ✅ FIXED: Use the dedicated first launch flag instead of checking data existence
+    return StorageService.isFirstLaunch();
   }
 }
