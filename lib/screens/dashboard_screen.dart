@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
-import '../models/expense.dart';
 import 'expense_list_screen.dart';
 import 'income_list_screen.dart';
 import 'settings_screen.dart';

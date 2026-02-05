@@ -10,6 +10,9 @@ class StorageService {
   static const expenseCategoryBox = 'expense_categories';
   static const settingsBox = 'settings';
   static const fortnightStartKey = 'fortnight_start';
+  static const minRemainingKey = 'min_remaining';
+  static const savingsPercentKey = 'savings_percent';
+  static const isFirstLaunchKey = 'is_first_launch';
 
   static final DateTime appStartDate = DateTime(2025, 12, 31);
 
@@ -26,7 +29,7 @@ class StorageService {
     await Hive.openBox<String>(expenseCategoryBox);
     await Hive.openBox<String>(settingsBox);
 
-    // --- Populate categories if empty
+    // --- Populate default categories only if empty
     final catBox = Hive.box<String>(expenseCategoryBox);
     if (catBox.isEmpty) {
       await catBox.addAll([
@@ -44,175 +47,64 @@ class StorageService {
       ]);
     }
 
-    // --- Populate incomes if empty ---
-    final incomeBoxInstance = Hive.box<Income>(incomeBox);
-    if (incomeBoxInstance.isEmpty) {
-      await incomeBoxInstance.addAll([
-        Income(
-          name: 'Perseus Salary',
-          amount: 2300.0,
-          category: 'Salary',
-          frequency: Frequency.fortnightly,
-          date: appStartDate,
-        ),
-        Income(
-          name: 'AusPost Salary',
-          amount: 850.0,
-          category: 'Salary',
-          frequency: Frequency.fortnightly,
-          date: appStartDate,
-        ),
-        Income(
-          name: 'Kara House',
-          amount: 300.0,
-          category: 'Home',
-          frequency: Frequency.fortnightly,
-          date: appStartDate,
-        ),
-        Income(
-          name: 'Clink FTB',
-          amount: 280.0,
-          category: 'Government',
-          frequency: Frequency.fortnightly,
-          date: appStartDate,
-        ),
-      ]);
+    // --- Initialize default settings if first launch
+    final settingsBoxInstance = Hive.box<String>(settingsBox);
+    if (settingsBoxInstance.get(isFirstLaunchKey) == null) {
+      await settingsBoxInstance.put(isFirstLaunchKey, 'false');
+      await settingsBoxInstance.put(minRemainingKey, '300.0');
+      await settingsBoxInstance.put(savingsPercentKey, '20.0');
     }
 
-    // --- Populate expense templates if empty ---
-    final expenseBoxInstance = Hive.box<Expense>(expenseBox);
-    if (expenseBoxInstance.isEmpty) {
-      await expenseBoxInstance.addAll([
-        Expense(
-            name: 'Loan Repayment 1',
-            amount: 800.0,
-            category: 'Home',
-            frequency: Frequency.fortnightly,
-            isTemplate: true),
-        Expense(
-            name: 'Loan Repayment 2',
-            amount: 125.0,
-            category: 'Home',
-            frequency: Frequency.fortnightly,
-            isTemplate: true),
-        Expense(
-            name: 'CSA Payment',
-            amount: 420.0,
-            category: 'Government',
-            frequency: Frequency.fortnightly,
-            isTemplate: true),
-        Expense(
-            name: 'OSHC',
-            amount: 150.0,
-            category: 'Kids',
-            frequency: Frequency.fortnightly,
-            isTemplate: true),
-        Expense(
-            name: 'Spriggy',
-            amount: 10.0,
-            category: 'Kids',
-            frequency: Frequency.fortnightly,
-            isTemplate: true),
-        Expense(
-            name: 'City of Swan',
-            amount: 90.0,
-            category: 'Home',
-            frequency: Frequency.fortnightly,
-            isTemplate: true),
-        Expense(
-            name: 'RAC Car Insurance',
-            amount: 88.0,
-            category: 'Transport',
-            frequency: Frequency.monthly,
-            isTemplate: true),
-        Expense(
-            name: 'RAC Home Insurance',
-            amount: 100.0,
-            category: 'Home',
-            frequency: Frequency.monthly,
-            isTemplate: true),
-        Expense(
-            name: 'Water Corp',
-            amount: 75.0,
-            category: 'Utilities',
-            frequency: Frequency.fortnightly,
-            isTemplate: true),
-        Expense(
-            name: 'Synergy (Elec)',
-            amount: 30.0,
-            category: 'Utilities',
-            frequency: Frequency.fortnightly,
-            isTemplate: true),
-        Expense(
-            name: 'AGL (Gas)',
-            amount: 22.0,
-            category: 'Utilities',
-            frequency: Frequency.fortnightly,
-            isTemplate: true),
-        Expense(
-            name: 'NBN',
-            amount: 60.0,
-            category: 'Utilities',
-            frequency: Frequency.monthly,
-            isTemplate: true),
-        Expense(
-            name: 'YouTube',
-            amount: 10.0,
-            category: 'Utilities',
-            frequency: Frequency.fortnightly,
-            isTemplate: true),
-        Expense(
-            name: 'Netflix',
-            amount: 10.0,
-            category: 'Utilities',
-            frequency: Frequency.monthly,
-            isTemplate: true),
-        Expense(
-            name: 'Mobile',
-            amount: 40.0,
-            category: 'Personal',
-            frequency: Frequency.monthly,
-            isTemplate: true),
-        Expense(
-            name: 'Gym (Chasing Better)',
-            amount: 24.34,
-            category: 'Personal',
-            frequency: Frequency.fortnightly,
-            isTemplate: true),
-        Expense(
-            name: 'Food',
-            amount: 600.0,
-            category: 'Grocery',
-            frequency: Frequency.fortnightly,
-            isTemplate: true),
-        Expense(
-            name: 'Holiday',
-            amount: 300.0,
-            category: 'Entertainment',
-            frequency: Frequency.fortnightly,
-            isTemplate: true),
-        Expense(
-            name: 'Birthday',
-            amount: 70.0,
-            category: 'Entertainment',
-            frequency: Frequency.fortnightly,
-            isTemplate: true),
-      ]);
-    }
+    // Note: No hardcoded income or expense templates - users add their own
+  }
+
+  // --- SETTINGS GETTERS/SETTERS ---
+  static double getMinRemaining() {
+    final box = Hive.box<String>(settingsBox);
+    final stored = box.get(minRemainingKey);
+    return double.tryParse(stored ?? '300.0') ?? 300.0;
+  }
+
+  static Future<void> saveMinRemaining(double amount) async {
+    final box = Hive.box<String>(settingsBox);
+    await box.put(minRemainingKey, amount.toString());
+  }
+
+  static double getSavingsPercent() {
+    final box = Hive.box<String>(settingsBox);
+    final stored = box.get(savingsPercentKey);
+    return double.tryParse(stored ?? '20.0') ?? 20.0;
+  }
+
+  static Future<void> saveSavingsPercent(double percent) async {
+    final box = Hive.box<String>(settingsBox);
+    await box.put(savingsPercentKey, percent.toString());
+  }
+
+  static bool isFirstLaunch() {
+    final box = Hive.box<String>(settingsBox);
+    return box.get(isFirstLaunchKey) != 'false';
+  }
+
+  static Future<void> completeFirstLaunch() async {
+    final box = Hive.box<String>(settingsBox);
+    await box.put(isFirstLaunchKey, 'false');
   }
 
   // --- TIME HELPERS ---
   static int getCurrentFortnightOffset() {
-    final daysSinceStart = DateTime.now().difference(appStartDate).inDays;
+    final start = getFortnightStart();
+    final daysSinceStart = DateTime.now().difference(start).inDays;
     return (daysSinceStart / 14).floor();
   }
 
   static Map<String, DateTime> getFortnightRange(int userOffset) {
+    final start = getFortnightStart();
     final totalOffset = getCurrentFortnightOffset() + userOffset;
-    final start = appStartDate.add(Duration(days: totalOffset * 14));
-    final end = start
+    final rangeStart = start.add(Duration(days: totalOffset * 14));
+    final end = rangeStart
         .add(const Duration(days: 13, hours: 23, minutes: 59, seconds: 59));
-    return {'start': start, 'end': end};
+    return {'start': rangeStart, 'end': end};
   }
 
   static Map<String, double> getDashboardSummary(int offset) {
@@ -237,17 +129,19 @@ class StorageService {
     final totalExpense = expenses.fold(0.0, (sum, item) => sum + item.amount);
 
     final totalLeft = totalIncome - totalExpense;
-    final savingsCap = totalIncome * 0.20;
+    final minRemaining = getMinRemaining();
+    final savingsPercent = getSavingsPercent();
+    final savingsCap = totalIncome * (savingsPercent / 100);
 
     double remaining = 0;
     double actualSavings = 0;
 
-    if (totalLeft <= 300) {
+    if (totalLeft <= minRemaining) {
       remaining = totalLeft > 0 ? totalLeft : 0;
       actualSavings = 0;
     } else {
-      remaining = 300;
-      final surplus = totalLeft - 300;
+      remaining = minRemaining;
+      final surplus = totalLeft - minRemaining;
       if (surplus <= savingsCap) {
         actualSavings = surplus;
       } else {
@@ -390,6 +284,20 @@ class StorageService {
   static Future<void> saveFortnightStart(DateTime date) async {
     final box = Hive.box<String>(settingsBox);
     await box.put(fortnightStartKey, date.toIso8601String());
+  }
+
+  // --- DATA MANAGEMENT ---
+  static Future<void> clearAllData() async {
+    await Hive.box<Income>(incomeBox).clear();
+    await Hive.box<Expense>(expenseBox).clear();
+  }
+
+  static Future<void> resetToDefaults() async {
+    final settingsBoxInstance = Hive.box<String>(settingsBox);
+    await settingsBoxInstance.put(minRemainingKey, '300.0');
+    await settingsBoxInstance.put(savingsPercentKey, '20.0');
+    await settingsBoxInstance.put(
+        fortnightStartKey, appStartDate.toIso8601String());
   }
 }
 
