@@ -178,7 +178,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               /// --- Doughnut Chart ---
               SizedBox(
-                height: 460,
+                height: 380,
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -233,6 +233,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         data.category,
                                     yValueMapper: (ChartData data, _) =>
                                         data.amount,
+                                    radius: '80%',
                                     innerRadius: '70%',
                                     dataLabelSettings: const DataLabelSettings(
                                       isVisible: true,
