@@ -17,7 +17,6 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
   Widget build(BuildContext context) {
     final range = StorageService.getFortnightRange(widget.fortnightOffset);
 
-    // 1. Get ONLY income records for this specific fortnight
     final allIncomes = StorageService.getIncomes();
     final receivedThisFortnight = allIncomes
         .where((inc) =>
@@ -26,8 +25,6 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
             inc.date.isBefore(range['end']!.add(const Duration(seconds: 1))))
         .toList();
 
-    // 2. Get the Master Checklist (Items with the appStartDate)
-    // Filter out items that have already been "received" this fortnight
     final expectedChecklist = allIncomes
         .where((inc) => inc.date == StorageService.appStartDate)
         .where((master) {
@@ -44,7 +41,6 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
       ),
       body: ListView(
         children: [
-          // --- MASTER CHECKLIST ---
           if (expectedChecklist.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
@@ -64,7 +60,6 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
                         style: const TextStyle(fontWeight: FontWeight.w500)),
                     subtitle: Text("\$${master.amount.toStringAsFixed(2)}"),
                     onTap: () async {
-                      // ✅ Tapping marks it as received and hides it from this list
                       await StorageService.checkOffIncome(
                           master, widget.fortnightOffset);
                       setState(() {});
@@ -72,10 +67,7 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
                   ),
                 )),
           ],
-
           const Divider(height: 40, thickness: 1, indent: 20, endIndent: 20),
-
-          // --- RECEIVED LIST ---
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text("RECEIVED",
@@ -101,8 +93,7 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
                       const Icon(Icons.delete_outline, color: Colors.redAccent),
                   onPressed: () async {
                     await StorageService.deleteIncome(income.id);
-                    setState(
-                        () {}); // Deleting here makes it pop back into the "Expected" list
+                    setState(() {});
                   },
                 ),
                 onTap: () => _editIncome(context, income),
@@ -120,7 +111,11 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
         MaterialPageRoute(
           builder: (_) => AddItemScreen(
             title: 'Add Income',
-            onSave: (name, category, amount, freq) async {
+            // ✅ Updated signature — named params have defaults, income ignores them
+            onSave: (name, category, amount, freq,
+                {bool isSavings = false,
+                bool isSavingsWithdrawal = false,
+                String? savingsBucket}) async {
               await StorageService.saveIncome(Income(
                 name: name,
                 category: category,

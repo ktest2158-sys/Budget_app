@@ -19,8 +19,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         .where((inc) => inc.date == StorageService.appStartDate)
         .toList();
     final currentStart = StorageService.getFortnightStart();
-    final savingsPercentage = StorageService.getSavingsPercent(); // FIXED
+    final savingsPercentage = StorageService.getSavingsPercent();
     final minimumRemaining = StorageService.getMinRemaining();
+    final showChart = StorageService.getShowChart(); // ✅ NEW
 
     return Scaffold(
       appBar: AppBar(
@@ -45,6 +46,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: _selectDate,
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // ✅ NEW: Display Section
+          const Text(
+            'Display',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: SwitchListTile(
+              secondary:
+                  const Icon(Icons.pie_chart_outline, color: Colors.blue),
+              title: const Text('Show Expense Chart'),
+              subtitle: const Text('Display doughnut chart on dashboard'),
+              value: showChart,
+              onChanged: (value) async {
+                await StorageService.saveShowChart(value);
+                setState(() {});
+              },
             ),
           ),
           const SizedBox(height: 24),
@@ -182,9 +204,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // =============================
-  // Actions
-  // =============================
   Future<void> _selectDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -192,7 +211,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2101),
     );
-
     if (picked != null) {
       await StorageService.saveFortnightStart(picked);
       setState(() {});
@@ -200,7 +218,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _editSavingsPercentage() async {
-    final currentValue = StorageService.getSavingsPercent(); // FIXED
+    final currentValue = StorageService.getSavingsPercent();
     final controller =
         TextEditingController(text: currentValue.toStringAsFixed(0));
 
@@ -231,11 +249,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (result == null) return;
-
     final percentage = double.tryParse(result);
     if (percentage == null || percentage < 0 || percentage > 100) return;
-
-    await StorageService.saveSavingsPercent(percentage); // FIXED
+    await StorageService.saveSavingsPercent(percentage);
     if (!mounted) return;
     setState(() {});
   }
@@ -272,10 +288,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (result == null) return;
-
     final amount = double.tryParse(result);
     if (amount == null || amount < 0) return;
-
     await StorageService.saveMinRemaining(amount);
     if (!mounted) return;
     setState(() {});
@@ -301,10 +315,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
-
     if (confirm != true) return;
-
-    await StorageService.resetToDefaults(); // FIXED
+    await StorageService.resetToDefaults();
     if (!mounted) return;
     setState(() {});
   }
@@ -330,16 +342,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
-
     if (confirm != true) return;
-
     for (var income in StorageService.getIncomes()) {
       await StorageService.deleteIncome(income.id);
     }
     for (var expense in StorageService.getExpenses()) {
       await StorageService.deleteExpense(expense.id);
     }
-
     if (!mounted) return;
     setState(() {});
   }

@@ -13,7 +13,7 @@ class Expense extends HiveObject {
   String name;
 
   @HiveField(2)
-  String category; 
+  String category;
 
   @HiveField(3)
   double amount;
@@ -24,13 +24,23 @@ class Expense extends HiveObject {
   @HiveField(5)
   bool isChecked;
 
-  // ✅ Used to filter which fortnight this payment belongs to
   @HiveField(6)
   DateTime? date;
 
-  // ✅ Used to identify items in your "Master List"
   @HiveField(7)
   bool isTemplate;
+
+  // ✅ Marks this expense as a savings contribution (deducted from spendable pool, tracked separately)
+  @HiveField(8)
+  bool isSavings;
+
+  // ✅ For withdrawals: which savings bucket this was paid from (e.g. "Holiday Fund")
+  @HiveField(9)
+  String? savingsBucket;
+
+  // ✅ Marks this as a one-off withdrawal from a savings bucket
+  @HiveField(10)
+  bool isSavingsWithdrawal;
 
   Expense({
     String? id,
@@ -41,18 +51,23 @@ class Expense extends HiveObject {
     this.isChecked = false,
     this.date,
     this.isTemplate = false,
+    this.isSavings = false,
+    this.savingsBucket,
+    this.isSavingsWithdrawal = false,
   }) : id = id ?? const Uuid().v4();
 
-  // Helper to create a "Real" expense payment record from a master template
   Expense createInstance(DateTime instanceDate) {
     return Expense(
       name: name,
       category: category,
       amount: amount,
       frequency: frequency,
-      isChecked: true, // It is checked because we are creating it by checking it off
+      isChecked: true,
       date: instanceDate,
-      isTemplate: false, // This is a real record, not a template
+      isTemplate: false,
+      isSavings: isSavings, // ✅ Preserve savings flag
+      savingsBucket: savingsBucket,
+      isSavingsWithdrawal: isSavingsWithdrawal,
     );
   }
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
 import '../models/expense.dart';
 import '../models/frequency.dart';
-import 'add_item_screen.dart'; // Ensure this matches your filename
+import 'add_item_screen.dart';
 
 class ExpenseListScreen extends StatefulWidget {
   final int fortnightOffset;
@@ -13,7 +13,8 @@ class ExpenseListScreen extends StatefulWidget {
 }
 
 class _ExpenseListScreenState extends State<ExpenseListScreen> {
-  late List<Expense> templates;
+  late List<Expense> regularTemplates;
+  late List<Expense> savingsTemplates;
   late List<Expense> paidInFortnight;
 
   @override
@@ -26,6 +27,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     final range = StorageService.getFortnightRange(widget.fortnightOffset);
     final allExpenses = StorageService.getExpenses();
 
+    // All non-template expenses checked off this fortnight (regular + savings contributions + withdrawals)
     paidInFortnight = allExpenses
         .where((exp) =>
             !exp.isTemplate &&
@@ -35,9 +37,17 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             exp.date!.isBefore(range['end']!.add(const Duration(seconds: 1))))
         .toList();
 
-    templates = StorageService.getTemplates().where((template) {
-      return !paidInFortnight.any((paid) => paid.name == template.name);
-    }).toList();
+    final paidNames = paidInFortnight.map((e) => e.name).toSet();
+
+    // Regular expense templates not yet paid this fortnight
+    regularTemplates = StorageService.getTemplates()
+        .where((t) => !t.isSavings && !paidNames.contains(t.name))
+        .toList();
+
+    // Savings templates not yet contributed this fortnight
+    savingsTemplates = StorageService.getTemplates()
+        .where((t) => t.isSavings && !paidNames.contains(t.name))
+        .toList();
 
     setState(() {});
   }
@@ -45,7 +55,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   void _checkOffExpense(Expense template) async {
     await StorageService.checkOffExpense(template, widget.fortnightOffset);
     if (!mounted) return;
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${template.name} checked off!')),
     );
@@ -69,6 +78,36 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     }
   }
 
+  // ✅ Add one-off expense with optional savings withdrawal
+  Future<void> _addOneOffExpense() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddItemScreen(
+          title: "Add One-Off Expense",
+          onSave: (name, category, amount, frequency,
+              {bool isSavings = false,
+              bool isSavingsWithdrawal = false,
+              String? savingsBucket}) async {
+            await StorageService.addExpense(
+              name: name,
+              category: category,
+              amount: amount,
+              frequency: frequency,
+              isTemplate: false,
+              date: DateTime.now(),
+              isSavings: isSavings,
+              isSavingsWithdrawal: isSavingsWithdrawal,
+              savingsBucket: savingsBucket,
+            );
+          },
+          showSavingsWithdrawalOption: true, // ✅ Enable withdrawal UI
+        ),
+      ),
+    );
+    _loadExpenses();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -77,35 +116,15 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AddItemScreen(
-                    title: "Add One-Off Expense",
-                    onSave: (name, category, amount, frequency) async {
-                      // Logic to save a non-template expense
-                      await StorageService.addExpense(
-                        name: name,
-                        category: category,
-                        amount: amount,
-                        frequency: frequency,
-                        isTemplate: false,
-                        date: DateTime.now(),
-                      );
-                    },
-                  ),
-                ),
-              );
-              _loadExpenses(); // Refresh list when returning
-            },
+            onPressed: _addOneOffExpense,
           ),
         ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          if (templates.isNotEmpty) ...[
+          // ─── REMAINING BILLS ───
+          if (regularTemplates.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Text(
@@ -114,7 +133,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                     TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
               ),
             ),
-            ...templates.map((template) => Card(
+            ...regularTemplates.map((template) => Card(
                   margin: const EdgeInsets.symmetric(vertical: 4),
                   child: ListTile(
                     leading: IconButton(
@@ -140,7 +159,50 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                   ),
                 )),
           ],
+
+          // ─── SAVINGS TO CONTRIBUTE ───
+          if (savingsTemplates.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                "SAVINGS TO CONTRIBUTE",
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, color: Colors.indigo),
+              ),
+            ),
+            ...savingsTemplates.map((template) => Card(
+                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  color: Colors.indigo[50],
+                  child: ListTile(
+                    leading: IconButton(
+                      icon: const Icon(Icons.savings_outlined,
+                          color: Colors.indigo),
+                      onPressed: () => _checkOffExpense(template),
+                    ),
+                    title: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(template.name,
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w500)),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('\$${template.amount.toStringAsFixed(2)}',
+                                style: const TextStyle(fontSize: 16)),
+                            Text(_frequencyText(template.frequency),
+                                style: const TextStyle(fontSize: 16)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                )),
+          ],
+
           const Divider(height: 40, thickness: 1),
+
+          // ─── PAID & COMPLETED ───
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
             child: Text(
@@ -157,37 +219,58 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                     style: TextStyle(color: Colors.grey)),
               ),
             ),
-          ...paidInFortnight.map((expense) => Card(
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                child: ListTile(
-                  leading: const Icon(Icons.check_circle, color: Colors.green),
-                  title: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(expense.name,
-                          style: const TextStyle(
-                              fontSize: 16, color: Colors.grey)),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('\$${expense.amount.toStringAsFixed(2)}',
-                              style: const TextStyle(fontSize: 16)),
-                          Text(_frequencyText(expense.frequency),
-                              style: const TextStyle(fontSize: 16)),
-                        ],
-                      ),
-                    ],
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline,
-                        color: Colors.redAccent),
-                    onPressed: () async {
-                      await StorageService.deleteExpense(expense.id);
-                      _loadExpenses();
-                    },
-                  ),
+          ...paidInFortnight.map((expense) {
+            final isSavings = expense.isSavings;
+            final isWithdrawal = expense.isSavingsWithdrawal;
+
+            // Display label for withdrawals: "BucketName · description"
+            final displayName = isWithdrawal && expense.savingsBucket != null
+                ? '${expense.savingsBucket} · ${expense.name}'
+                : expense.name;
+
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              child: ListTile(
+                leading: Icon(
+                  isSavings
+                      ? Icons.savings
+                      : isWithdrawal
+                          ? Icons.arrow_upward
+                          : Icons.check_circle,
+                  color: isSavings
+                      ? Colors.indigo
+                      : isWithdrawal
+                          ? Colors.orange
+                          : Colors.green,
                 ),
-              )),
+                title: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(displayName,
+                        style:
+                            const TextStyle(fontSize: 16, color: Colors.grey)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('\$${expense.amount.toStringAsFixed(2)}',
+                            style: const TextStyle(fontSize: 16)),
+                        Text(_frequencyText(expense.frequency),
+                            style: const TextStyle(fontSize: 16)),
+                      ],
+                    ),
+                  ],
+                ),
+                trailing: IconButton(
+                  icon:
+                      const Icon(Icons.delete_outline, color: Colors.redAccent),
+                  onPressed: () async {
+                    await StorageService.deleteExpense(expense.id);
+                    _loadExpenses();
+                  },
+                ),
+              ),
+            );
+          }),
           const SizedBox(height: 80),
         ],
       ),
